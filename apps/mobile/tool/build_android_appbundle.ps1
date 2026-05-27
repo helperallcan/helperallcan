@@ -1,5 +1,5 @@
 param(
-  [string]$BuildRoot = "$env:TEMP\zhao_bang_shou_mobile_bundle_build"
+  [string]$BuildRoot = "$env:TEMP\helper_mobile_bundle_build"
 )
 
 $ErrorActionPreference = "Stop"

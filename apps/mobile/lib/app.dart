@@ -29,7 +29,7 @@ class ZhaoBangShouApp extends StatelessWidget {
     }
 
     return MaterialApp.router(
-      title: '找帮手',
+      title: 'Helper',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       routerConfig: _router(),

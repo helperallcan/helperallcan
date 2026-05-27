@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zhao_bang_shou/models/profile.dart';
+import 'package:helper/models/profile.dart';
 
 void main() {
   group('AppRole.fromValue', () {

@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: '找帮手 Admin',
-  description: '找帮手平台后台'
+  title: 'Helper Admin',
+  description: 'Helper 平台后台'
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

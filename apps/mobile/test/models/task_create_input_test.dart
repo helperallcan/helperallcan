@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zhao_bang_shou/models/task.dart';
-import 'package:zhao_bang_shou/models/task_create_input.dart';
+import 'package:helper/models/task.dart';
+import 'package:helper/models/task_create_input.dart';
 
 void main() {
   group('TaskCreateInput.parseOptionalMoney', () {

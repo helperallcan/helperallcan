@@ -1,6 +1,6 @@
 param(
-  [string]$KeystoreDir = "$env:USERPROFILE\.zhao_bang_shou",
-  [string]$Alias = "zhao-bang-shou"
+  [string]$KeystoreDir = "$env:USERPROFILE\.helper",
+  [string]$Alias = "helper"
 )
 
 $ErrorActionPreference = "Stop"
@@ -45,7 +45,7 @@ $keyPassword = $storePassword
   -alias $Alias `
   -storepass $storePassword `
   -keypass $keyPassword `
-  -dname "CN=Zhao Bang Shou, OU=Mobile, O=HelperAllCan, L=Kuala Lumpur, ST=Kuala Lumpur, C=MY"
+  -dname "CN=Helper, OU=Mobile, O=Helper, L=Kuala Lumpur, ST=Kuala Lumpur, C=MY"
 
 $normalizedKeystorePath = $KeystorePath.Replace("\", "/")
 @"

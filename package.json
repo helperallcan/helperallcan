@@ -1,5 +1,5 @@
 {
-  "name": "zhao-bang-shou",
+  "name": "helper",
   "private": true,
   "scripts": {
     "check": "npm run check:admin",

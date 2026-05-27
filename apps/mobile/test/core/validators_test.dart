@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zhao_bang_shou/core/validators.dart';
+import 'package:helper/core/validators.dart';
 
 void main() {
   group('AppValidators.requiredText', () {

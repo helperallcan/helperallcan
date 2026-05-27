@@ -16,7 +16,7 @@ export function AdminNav() {
   return (
     <nav className="admin-nav">
       <Link className="brand" href="/dashboard">
-        找帮手 Admin
+        Helper Admin
       </Link>
       <div className="nav-links">
         {links.map(([label, href]) => (

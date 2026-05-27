@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zhao_bang_shou/models/helper_profile.dart';
-import 'package:zhao_bang_shou/models/offer.dart';
-import 'package:zhao_bang_shou/models/task.dart';
+import 'package:helper/models/helper_profile.dart';
+import 'package:helper/models/offer.dart';
+import 'package:helper/models/task.dart';
 
 void main() {
   group('HelperVerificationStatus.fromValue', () {

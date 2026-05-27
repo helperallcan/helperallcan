@@ -97,7 +97,7 @@ jobs:
       - name: Upload web build
         uses: actions/upload-artifact@v4
         with:
-          name: zhao-bang-shou-web
+          name: helper-web
           path: apps/mobile/build/web
           if-no-files-found: error
           retention-days: 7
@@ -105,7 +105,7 @@ jobs:
       - name: Upload Android debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: zhao-bang-shou-debug-apk
+          name: helper-debug-apk
           path: apps/mobile/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
           retention-days: 7

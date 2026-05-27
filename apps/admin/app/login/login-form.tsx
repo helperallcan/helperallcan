@@ -11,7 +11,7 @@ export function LoginForm({ error }: { error?: string }) {
 
   return (
     <form className="login-card" action={formAction}>
-      <h1>找帮手 Admin</h1>
+      <h1>Helper Admin</h1>
       <p>请使用管理员账号登录后台。</p>
       {state.error ? <p className="error">{state.error}</p> : null}
       <label className="field">

@@ -1,4 +1,4 @@
-package com.helperallcan.zhao_bang_shou
+package com.helperallcan.helper
 
 import io.flutter.embedding.android.FlutterActivity
 

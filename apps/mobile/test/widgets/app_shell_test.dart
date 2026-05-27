@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zhao_bang_shou/widgets/app_shell.dart';
+import 'package:helper/widgets/app_shell.dart';
 
 void main() {
   group('AppShellBreakpoints', () {

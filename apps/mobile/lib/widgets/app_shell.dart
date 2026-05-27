@@ -172,7 +172,7 @@ class _DesktopSidebar extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '找帮手',
+                        'Helper',
                         style: TextStyle(
                             fontSize: 18, fontWeight: FontWeight.w800),
                       ),

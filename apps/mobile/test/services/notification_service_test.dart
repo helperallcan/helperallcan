@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zhao_bang_shou/services/notification_service.dart';
+import 'package:helper/services/notification_service.dart';
 
 void main() {
   group('AppNotification.fromMap', () {

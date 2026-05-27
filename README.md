@@ -1,6 +1,6 @@
-# 找帮手
+# Helper
 
-找帮手是一个本地生活互助、技能服务、找答案、找东西和找资源的平台。第一版 MVP 包含 Flutter 用户端、Next.js Admin 后台，以及 Supabase PostgreSQL / Realtime / Storage 后端。
+Helper 是一个本地生活互助、技能服务、找答案、找东西和找资源的平台。第一版 MVP 包含 Flutter 用户端、Next.js Admin 后台，以及 Supabase PostgreSQL / Realtime / Storage 后端。
 
 ## 项目结构
 

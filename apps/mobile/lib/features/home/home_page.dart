@@ -13,7 +13,7 @@ class HomePage extends StatelessWidget {
     final profileFuture = ProfileService().currentProfile();
 
     return AppShell(
-      title: '找帮手',
+      title: 'Helper',
       actions: [
         IconButton(
           tooltip: '通知',

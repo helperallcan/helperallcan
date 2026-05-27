@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zhao_bang_shou/core/theme.dart';
+import 'package:helper/core/theme.dart';
 
 void main() {
   group('AppTheme.light', () {

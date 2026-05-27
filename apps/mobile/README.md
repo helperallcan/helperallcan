@@ -1,4 +1,4 @@
-# 找帮手 Flutter App
+# Helper Flutter App
 
 ## Run
 
@@ -53,7 +53,7 @@ powershell -ExecutionPolicy Bypass -File .\tool\setup_android_release_signing.ps
 Back up these two files somewhere safe:
 
 ```text
-%USERPROFILE%\.zhao_bang_shou\android_upload_keystore.jks
+%USERPROFILE%\.helper\android_upload_keystore.jks
 android/key.properties
 ```
 

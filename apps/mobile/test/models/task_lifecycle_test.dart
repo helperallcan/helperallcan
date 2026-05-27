@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zhao_bang_shou/models/message.dart';
-import 'package:zhao_bang_shou/models/offer.dart';
-import 'package:zhao_bang_shou/models/review.dart';
-import 'package:zhao_bang_shou/models/task.dart';
+import 'package:helper/models/message.dart';
+import 'package:helper/models/offer.dart';
+import 'package:helper/models/review.dart';
+import 'package:helper/models/task.dart';
 
 void main() {
   test('Task.fromMap maps lifecycle completion fields', () {

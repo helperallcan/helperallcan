@@ -94,11 +94,13 @@ void main() {
     });
 
     test('accepts valid range', () {
-      expect(AppValidators.budgetRange(minValue: '50', maxValue: '100'), isNull);
+      expect(
+          AppValidators.budgetRange(minValue: '50', maxValue: '100'), isNull);
     });
 
     test('rejects max lower than min', () {
-      expect(AppValidators.budgetRange(minValue: '120', maxValue: '80'), isNotNull);
+      expect(AppValidators.budgetRange(minValue: '120', maxValue: '80'),
+          isNotNull);
     });
   });
 }

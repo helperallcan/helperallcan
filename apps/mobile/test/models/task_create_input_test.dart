@@ -57,9 +57,14 @@ void main() {
     });
 
     test('sets urgent fee only for urgent tasks', () {
-      expect(_input(isUrgent: true).toInsertMap(creatorId: 'user-id')['urgent_fee'],
+      expect(
+          _input(isUrgent: true)
+              .toInsertMap(creatorId: 'user-id')['urgent_fee'],
           urgentPublishFee);
-      expect(_input(isUrgent: false).toInsertMap(creatorId: 'user-id')['urgent_fee'], 0);
+      expect(
+          _input(isUrgent: false)
+              .toInsertMap(creatorId: 'user-id')['urgent_fee'],
+          0);
     });
   });
 }

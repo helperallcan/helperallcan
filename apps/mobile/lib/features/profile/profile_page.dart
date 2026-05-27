@@ -181,9 +181,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 )
                 .toList(),
             selected: {_role},
-            onSelectionChanged: _saving
-                ? null
-                : (value) => setState(() => _role = value.first),
+            onSelectionChanged:
+                _saving ? null : (value) => setState(() => _role = value.first),
           ),
           const SizedBox(height: 20),
           TextFormField(

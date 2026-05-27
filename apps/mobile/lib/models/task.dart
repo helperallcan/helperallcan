@@ -73,6 +73,9 @@ class Task {
     required this.status,
     required this.createdAt,
     this.assignedHelperId,
+    this.completionNote,
+    this.completionProofUrl,
+    this.completedAt,
     this.categoryId,
     this.subcategoryId,
     this.categoryName,
@@ -101,19 +104,29 @@ class Task {
   final double? budgetMax;
   final bool isUrgent;
   final TaskStatus status;
+  final String? completionNote;
+  final String? completionProofUrl;
+  final DateTime? completedAt;
   final DateTime createdAt;
   final List<TaskImage> images;
 
   String get budgetLabel {
-    if (budgetMin == null && budgetMax == null) return '面议';
-    if (budgetMin != null && budgetMax == null) return 'RM ${budgetMin!.toStringAsFixed(0)} 起';
-    if (budgetMin == null && budgetMax != null) return '最高 RM ${budgetMax!.toStringAsFixed(0)}';
+    if (budgetMin == null && budgetMax == null) {
+      return '面议';
+    }
+    if (budgetMin != null && budgetMax == null) {
+      return 'RM ${budgetMin!.toStringAsFixed(0)} 起';
+    }
+    if (budgetMin == null && budgetMax != null) {
+      return '最高 RM ${budgetMax!.toStringAsFixed(0)}';
+    }
     return 'RM ${budgetMin!.toStringAsFixed(0)} - ${budgetMax!.toStringAsFixed(0)}';
   }
 
   factory Task.fromMap(Map<String, dynamic> map) {
     final images = (map['task_images'] as List<dynamic>? ?? [])
-        .map((item) => TaskImage.fromMap(Map<String, dynamic>.from(item as Map)))
+        .map(
+            (item) => TaskImage.fromMap(Map<String, dynamic>.from(item as Map)))
         .toList();
 
     final category = map['categories'];
@@ -126,7 +139,8 @@ class Task {
       categoryId: map['category_id'] as String?,
       subcategoryId: map['subcategory_id'] as String?,
       categoryName: category is Map ? category['name'] as String? : null,
-      subcategoryName: subcategory is Map ? subcategory['name'] as String? : null,
+      subcategoryName:
+          subcategory is Map ? subcategory['name'] as String? : null,
       taskType: taskKindFromValue(map['task_type'] as String?),
       title: map['title'] as String? ?? '',
       description: map['description'] as String? ?? '',
@@ -137,7 +151,11 @@ class Task {
       budgetMax: (map['budget_max'] as num?)?.toDouble(),
       isUrgent: map['is_urgent'] as bool? ?? false,
       status: TaskStatus.fromValue(map['status'] as String?),
-      createdAt: DateTime.tryParse(map['created_at'] as String? ?? '') ?? DateTime.now(),
+      completionNote: map['completion_note'] as String?,
+      completionProofUrl: map['completion_proof_url'] as String?,
+      completedAt: DateTime.tryParse(map['completed_at'] as String? ?? ''),
+      createdAt: DateTime.tryParse(map['created_at'] as String? ?? '') ??
+          DateTime.now(),
       images: images,
     );
   }

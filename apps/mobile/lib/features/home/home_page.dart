@@ -50,21 +50,24 @@ class HomePage extends StatelessWidget {
                         subtitle: '跑腿、维修、清洁、临时协助',
                         icon: Icons.handshake_outlined,
                         color: const Color(0xff0f766e),
-                        onTap: () => context.go('/tasks/new/${TaskKind.help.value}'),
+                        onTap: () =>
+                            context.go('/tasks/new/${TaskKind.help.value}'),
                       ),
                       _Entry(
                         title: '我要找答案',
                         subtitle: '学习、职场、电脑手机问题',
                         icon: Icons.lightbulb_outline,
                         color: const Color(0xff2563eb),
-                        onTap: () => context.go('/tasks/new/${TaskKind.answer.value}'),
+                        onTap: () =>
+                            context.go('/tasks/new/${TaskKind.answer.value}'),
                       ),
                       _Entry(
                         title: '我要找东西',
                         subtitle: '失物、二手、本地线索',
                         icon: Icons.search_outlined,
                         color: const Color(0xffb45309),
-                        onTap: () => context.go('/tasks/new/${TaskKind.findItem.value}'),
+                        onTap: () =>
+                            context.go('/tasks/new/${TaskKind.findItem.value}'),
                       ),
                       _Entry(
                         title: '我要做帮手',
@@ -110,9 +113,13 @@ class _WelcomeHeader extends StatelessWidget {
         child: wide
             ? Row(
                 children: [
-                  Expanded(flex: 3, child: _WelcomeCopy(name: name, style: titleStyle)),
+                  Expanded(
+                      flex: 3,
+                      child: _WelcomeCopy(name: name, style: titleStyle)),
                   const SizedBox(width: 24),
-                  const Expanded(flex: 2, child: _WelcomeActions(alignment: WrapAlignment.end)),
+                  const Expanded(
+                      flex: 2,
+                      child: _WelcomeActions(alignment: WrapAlignment.end)),
                 ],
               )
             : Column(
@@ -233,7 +240,9 @@ class _EntryCard extends StatelessWidget {
             onTap: entry.onTap,
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: compact ? _CompactEntry(entry: entry) : _ExpandedEntry(entry: entry),
+              child: compact
+                  ? _CompactEntry(entry: entry)
+                  : _ExpandedEntry(entry: entry),
             ),
           );
         },
@@ -307,7 +316,8 @@ class _CompactEntry extends StatelessWidget {
                     ),
               ),
               const SizedBox(height: 4),
-              Text(entry.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
+              Text(entry.subtitle,
+                  maxLines: 2, overflow: TextOverflow.ellipsis),
             ],
           ),
         ),

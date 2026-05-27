@@ -71,9 +71,8 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final title = _isRegister ? '创建账号' : '欢迎回来';
-    final subtitle = _isRegister
-        ? '注册后可以发布需求、报价接单和管理自己的本地服务资料。'
-        : '登录后继续发布任务、聊天和查看帮手报价。';
+    final subtitle =
+        _isRegister ? '注册后可以发布需求、报价接单和管理自己的本地服务资料。' : '登录后继续发布任务、聊天和查看帮手报价。';
 
     return Scaffold(
       body: SafeArea(
@@ -89,9 +88,10 @@ class _LoginPageState extends State<LoginPage> {
                   children: [
                     Text(
                       '找帮手',
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -152,7 +152,8 @@ class _LoginPageState extends State<LoginPage> {
                         suffixIcon: IconButton(
                           tooltip: _obscurePassword ? '显示密码' : '隐藏密码',
                           onPressed: () {
-                            setState(() => _obscurePassword = !_obscurePassword);
+                            setState(
+                                () => _obscurePassword = !_obscurePassword);
                           },
                           icon: Icon(
                             _obscurePassword
@@ -162,8 +163,9 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       obscureText: _obscurePassword,
-                      textInputAction:
-                          _isRegister ? TextInputAction.next : TextInputAction.done,
+                      textInputAction: _isRegister
+                          ? TextInputAction.next
+                          : TextInputAction.done,
                       validator: AppValidators.password,
                       onFieldSubmitted: (_) {
                         if (!_isRegister) _submit();

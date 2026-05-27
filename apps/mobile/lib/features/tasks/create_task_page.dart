@@ -70,7 +70,8 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
     });
 
     try {
-      final categories = await _taskService.fetchCategories(taskKind: widget.taskKind);
+      final categories =
+          await _taskService.fetchCategories(taskKind: widget.taskKind);
       if (!mounted) return;
       setState(() {
         _categories = categories;
@@ -189,7 +190,8 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
   @override
   Widget build(BuildContext context) {
     final parents = _categories.where((item) => item.parentId == null).toList();
-    final children = _categories.where((item) => item.parentId == _categoryId).toList();
+    final children =
+        _categories.where((item) => item.parentId == _categoryId).toList();
 
     return AppShell(
       title: widget.taskKind.label,
@@ -206,9 +208,10 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                       children: [
                         Text(
                           '发布需求',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w800,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                  ),
                         ),
                         const SizedBox(height: 6),
                         const Text('写清楚需求、地点和预算，方便附近帮手快速报价。'),
@@ -274,14 +277,16 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                             Expanded(
                               child: TextFormField(
                                 controller: _city,
-                                decoration: const InputDecoration(labelText: '城市'),
+                                decoration:
+                                    const InputDecoration(labelText: '城市'),
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: TextFormField(
                                 controller: _district,
-                                decoration: const InputDecoration(labelText: '地区'),
+                                decoration:
+                                    const InputDecoration(labelText: '地区'),
                               ),
                             ),
                           ],
@@ -292,10 +297,12 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                             Expanded(
                               child: TextFormField(
                                 controller: _budgetMin,
-                                keyboardType: const TextInputType.numberWithOptions(
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
                                   decimal: true,
                                 ),
-                                decoration: const InputDecoration(labelText: '最低预算 RM'),
+                                decoration:
+                                    const InputDecoration(labelText: '最低预算 RM'),
                                 validator: AppValidators.optionalMoney,
                               ),
                             ),
@@ -303,10 +310,12 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                             Expanded(
                               child: TextFormField(
                                 controller: _budgetMax,
-                                keyboardType: const TextInputType.numberWithOptions(
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
                                   decimal: true,
                                 ),
-                                decoration: const InputDecoration(labelText: '最高预算 RM'),
+                                decoration:
+                                    const InputDecoration(labelText: '最高预算 RM'),
                                 validator: _validateBudgetMax,
                               ),
                             ),
@@ -319,7 +328,8 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                           title: const Text('加急发布'),
                           subtitle: const Text('当前会突出显示；后续可接入加急发布费。'),
                           secondary: const Icon(Icons.flash_on_outlined),
-                          onChanged: (value) => setState(() => _isUrgent = value),
+                          onChanged: (value) =>
+                              setState(() => _isUrgent = value),
                         ),
                         const SizedBox(height: 10),
                         _ImagePickerSection(
@@ -394,7 +404,7 @@ class _CategoryFields extends StatelessWidget {
     return Column(
       children: [
         DropdownButtonFormField<String>(
-          value: categoryId,
+          initialValue: categoryId,
           decoration: const InputDecoration(
             labelText: '分类',
             prefixIcon: Icon(Icons.category_outlined),
@@ -412,7 +422,7 @@ class _CategoryFields extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          value: subcategoryId,
+          initialValue: subcategoryId,
           decoration: const InputDecoration(
             labelText: '子分类',
             prefixIcon: Icon(Icons.account_tree_outlined),

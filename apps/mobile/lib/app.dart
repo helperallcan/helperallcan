@@ -56,12 +56,14 @@ GoRouter _router() {
         path: '/notifications',
         builder: (context, state) => const NotificationsPage(),
       ),
-      GoRoute(path: '/profile', builder: (context, state) => const ProfilePage()),
+      GoRoute(
+          path: '/profile', builder: (context, state) => const ProfilePage()),
       GoRoute(
         path: '/helper-profile',
         builder: (context, state) => const HelperProfilePage(),
       ),
-      GoRoute(path: '/tasks', builder: (context, state) => const TaskListPage()),
+      GoRoute(
+          path: '/tasks', builder: (context, state) => const TaskListPage()),
       GoRoute(
         path: '/tasks/new/:kind',
         builder: (context, state) => CreateTaskPage(

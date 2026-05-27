@@ -3,7 +3,7 @@
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(28);
+select plan(30);
 
 create temporary table test_flags (
   name text primary key,
@@ -251,6 +251,18 @@ select is(
   (select count(*)::integer from public.helper_profiles where user_id = '00000000-0000-0000-0000-000000000102'),
   1,
   'users can create their own helper profile'
+);
+
+select is(
+  public.request_helper_verification(),
+  'pending'::public.verification_status,
+  'helpers can request verification for their own helper profile'
+);
+
+select is(
+  (select verification_status from public.helper_profiles where user_id = '00000000-0000-0000-0000-000000000102'),
+  'pending'::public.verification_status,
+  'helper verification requests are saved as pending'
 );
 
 insert into public.task_offers (

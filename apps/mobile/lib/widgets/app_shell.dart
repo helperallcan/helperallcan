@@ -86,8 +86,10 @@ class _MobileShell extends StatelessWidget {
         onDestinationSelected: (index) => _goToIndex(context, index),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home_outlined), label: '首页'),
-          NavigationDestination(icon: Icon(Icons.list_alt_outlined), label: '任务'),
-          NavigationDestination(icon: Icon(Icons.handyman_outlined), label: '帮手'),
+          NavigationDestination(
+              icon: Icon(Icons.list_alt_outlined), label: '任务'),
+          NavigationDestination(
+              icon: Icon(Icons.handyman_outlined), label: '帮手'),
           NavigationDestination(icon: Icon(Icons.person_outline), label: '我的'),
         ],
       ),
@@ -161,7 +163,8 @@ class _DesktopSidebar extends StatelessWidget {
                     color: Theme.of(context).colorScheme.primary,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.handshake_outlined, color: Colors.white),
+                  child:
+                      const Icon(Icons.handshake_outlined, color: Colors.white),
                 ),
                 const SizedBox(width: 12),
                 const Expanded(
@@ -170,7 +173,8 @@ class _DesktopSidebar extends StatelessWidget {
                     children: [
                       Text(
                         '找帮手',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w800),
                       ),
                       SizedBox(height: 2),
                       Text('本地互助平台', style: TextStyle(fontSize: 12)),
@@ -251,14 +255,18 @@ class _NavItem extends StatelessWidget {
           height: 46,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: selected ? colorScheme.primary.withAlpha(24) : Colors.transparent,
+            color: selected
+                ? colorScheme.primary.withAlpha(24)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
             children: [
               Icon(
                 selected ? selectedIcon : icon,
-                color: selected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                color: selected
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: 12),
               Text(
@@ -290,7 +298,8 @@ class _DesktopTopBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: Border(
-          bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+          bottom:
+              BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
       ),
       child: Row(

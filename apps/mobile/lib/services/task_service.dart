@@ -1,6 +1,7 @@
 import '../core/supabase_client.dart';
 import '../models/app_category.dart';
 import '../models/offer.dart';
+import '../models/review.dart';
 import '../models/task.dart';
 import '../models/task_create_input.dart';
 
@@ -8,20 +9,19 @@ class TaskDetailData {
   const TaskDetailData({
     required this.task,
     required this.offers,
+    required this.reviews,
     this.creatorName,
   });
 
   final Task task;
   final List<TaskOffer> offers;
+  final List<TaskReview> reviews;
   final String? creatorName;
 }
 
 class TaskService {
   Future<List<AppCategory>> fetchCategories({TaskKind? taskKind}) async {
-    dynamic query = supabase
-        .from('categories')
-        .select()
-        .eq('is_active', true);
+    dynamic query = supabase.from('categories').select().eq('is_active', true);
 
     if (taskKind != null) {
       query = query.eq('task_type', taskKind.value);
@@ -29,7 +29,8 @@ class TaskService {
 
     final rows = await query.order('sort_order');
     return (rows as List<dynamic>)
-        .map((row) => AppCategory.fromMap(Map<String, dynamic>.from(row as Map)))
+        .map(
+            (row) => AppCategory.fromMap(Map<String, dynamic>.from(row as Map)))
         .toList();
   }
 
@@ -41,15 +42,22 @@ class TaskService {
   }) async {
     dynamic query = supabase
         .from('tasks')
-        .select('*, categories:category_id(name), subcategories:subcategory_id(name), task_images(*)')
+        .select(
+            '*, categories:category_id(name), subcategories:subcategory_id(name), task_images(*)')
         .inFilter('status', ['open', 'offered', 'assigned', 'in_progress']);
 
-    if (taskKind != null) query = query.eq('task_type', taskKind.value);
+    if (taskKind != null) {
+      query = query.eq('task_type', taskKind.value);
+    }
     if (categoryId != null && categoryId.isNotEmpty) {
       query = query.eq('category_id', categoryId);
     }
-    if (city != null && city.trim().isNotEmpty) query = query.ilike('city', city.trim());
-    if (urgentOnly) query = query.eq('is_urgent', true);
+    if (city != null && city.trim().isNotEmpty) {
+      query = query.ilike('city', city.trim());
+    }
+    if (urgentOnly) {
+      query = query.eq('is_urgent', true);
+    }
 
     final rows = await query
         .order('is_urgent', ascending: false)
@@ -78,20 +86,26 @@ class TaskService {
     final row = await supabase
         .from('tasks')
         .select(
-          '*, creator:creator_id(display_name), categories:category_id(name), subcategories:subcategory_id(name), task_images(*), task_offers(*, helper:helper_id(display_name, avatar_url))',
+          '*, creator:creator_id(display_name), categories:category_id(name), subcategories:subcategory_id(name), task_images(*), task_offers(*, helper:helper_id(display_name, avatar_url)), reviews(*, reviewer:reviewer_id(display_name), reviewee:reviewee_id(display_name))',
         )
         .eq('id', taskId)
         .single();
 
     final map = Map<String, dynamic>.from(row);
     final offers = (map['task_offers'] as List<dynamic>? ?? [])
-        .map((item) => TaskOffer.fromMap(Map<String, dynamic>.from(item as Map)))
+        .map(
+            (item) => TaskOffer.fromMap(Map<String, dynamic>.from(item as Map)))
+        .toList();
+    final reviews = (map['reviews'] as List<dynamic>? ?? [])
+        .map((item) =>
+            TaskReview.fromMap(Map<String, dynamic>.from(item as Map)))
         .toList();
     final creator = map['creator'];
 
     return TaskDetailData(
       task: Task.fromMap(map),
       offers: offers,
+      reviews: reviews,
       creatorName: creator is Map ? creator['display_name'] as String? : null,
     );
   }
@@ -140,8 +154,8 @@ class TaskService {
   }
 
   Future<String> acceptOffer(String offerId) async {
-    final conversationId =
-        await supabase.rpc('accept_task_offer', params: {'p_offer_id': offerId});
+    final conversationId = await supabase
+        .rpc('accept_task_offer', params: {'p_offer_id': offerId});
     return conversationId as String;
   }
 
@@ -173,7 +187,7 @@ class TaskService {
       'reviewer_id': user.id,
       'reviewee_id': revieweeId,
       'rating': rating,
-      'comment': comment?.trim(),
+      'comment': normalizeOptionalText(comment),
     });
   }
 
@@ -188,7 +202,30 @@ class TaskService {
       'target_type': 'task',
       'target_id': taskId,
       'reason': reason.trim(),
-      'details': details?.trim(),
+      'details': normalizeOptionalText(details),
     });
+  }
+
+  Future<void> reportUser({
+    required String userId,
+    required String reason,
+    String? details,
+  }) async {
+    final user = supabase.auth.currentUser!;
+    await supabase.from('reports').insert({
+      'reporter_id': user.id,
+      'target_type': 'user',
+      'target_id': userId,
+      'reason': reason.trim(),
+      'details': normalizeOptionalText(details),
+    });
+  }
+
+  static String? normalizeOptionalText(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return null;
+    }
+    return trimmed;
   }
 }

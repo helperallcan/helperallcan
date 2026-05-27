@@ -48,7 +48,8 @@ class TaskOffer {
       helperId: map['helper_id'] as String,
       amount: (map['amount'] as num?)?.toDouble() ?? 0,
       status: OfferStatus.fromValue(map['status'] as String?),
-      createdAt: DateTime.tryParse(map['created_at'] as String? ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(map['created_at'] as String? ?? '') ??
+          DateTime.now(),
       message: map['message'] as String?,
       estimatedMinutes: map['estimated_minutes'] as int?,
       helperName: helper is Map ? helper['display_name'] as String? : null,

@@ -1,10 +1,14 @@
 import { StatusBadge } from '@/components/status-badge';
 import { adminSupabase } from '@/lib/supabase/admin';
 
+import { updateHelperVerificationAction } from '../actions';
+
 export default async function HelpersPage() {
   const { data: helpers } = await adminSupabase
     .from('helper_profiles')
-    .select('id, user_id, headline, skills, service_areas, verification_status, completed_tasks, rating_average, profiles:user_id(display_name, phone, city)')
+    .select(
+      'id, user_id, headline, skills, service_areas, verification_status, completed_tasks, rating_average, profiles:user_id(display_name, phone, city)'
+    )
     .order('created_at', { ascending: false })
     .limit(100);
 
@@ -13,7 +17,7 @@ export default async function HelpersPage() {
       <div className="page-head">
         <div>
           <h1>所有帮手</h1>
-          <p>查看技能、服务地区、评分和认证状态。</p>
+          <p>查看技能、服务地区、评分和认证状态，也可以直接处理认证。</p>
         </div>
       </div>
 
@@ -26,11 +30,15 @@ export default async function HelpersPage() {
               <th>服务地区</th>
               <th>评分</th>
               <th>认证</th>
+              <th>操作</th>
             </tr>
           </thead>
           <tbody>
             {(helpers ?? []).map((helper) => {
               const profile = Array.isArray(helper.profiles) ? helper.profiles[0] : helper.profiles;
+              const verificationDefault =
+                helper.verification_status === 'rejected' ? 'rejected' : 'approved';
+
               return (
                 <tr key={helper.id}>
                   <td>
@@ -45,6 +53,19 @@ export default async function HelpersPage() {
                   </td>
                   <td>
                     <StatusBadge value={helper.verification_status} />
+                  </td>
+                  <td>
+                    <form className="actions" action={updateHelperVerificationAction}>
+                      <input type="hidden" name="userId" value={helper.user_id} />
+                      <select name="status" defaultValue={verificationDefault}>
+                        <option value="approved">通过</option>
+                        <option value="rejected">拒绝</option>
+                      </select>
+                      <input name="note" placeholder="审核备注" />
+                      <button className="button" type="submit">
+                        保存
+                      </button>
+                    </form>
                   </td>
                 </tr>
               );

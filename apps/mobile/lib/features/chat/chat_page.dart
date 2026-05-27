@@ -67,7 +67,8 @@ class _ChatPageState extends State<ChatPage> {
                     final message = messages[index];
                     final isMine = message.senderId == currentUserId;
                     return Align(
-                      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment:
+                          isMine ? Alignment.centerRight : Alignment.centerLeft,
                       child: Container(
                         constraints: const BoxConstraints(maxWidth: 320),
                         margin: const EdgeInsets.only(bottom: 10),
@@ -79,8 +80,9 @@ class _ChatPageState extends State<ChatPage> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Column(
-                          crossAxisAlignment:
-                              isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                          crossAxisAlignment: isMine
+                              ? CrossAxisAlignment.end
+                              : CrossAxisAlignment.start,
                           children: [
                             Text(message.body),
                             const SizedBox(height: 4),

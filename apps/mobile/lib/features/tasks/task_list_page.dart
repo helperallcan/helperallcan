@@ -105,7 +105,8 @@ class _TaskListPageState extends State<TaskListPage> {
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                     itemCount: tasks.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) => _TaskCard(task: tasks[index]),
+                    itemBuilder: (context, index) =>
+                        _TaskCard(task: tasks[index]),
                   ),
                 );
               },
@@ -146,7 +147,9 @@ class _Filters extends StatelessWidget {
       future: categoriesFuture,
       builder: (context, snapshot) {
         final categories = (snapshot.data ?? [])
-            .where((item) => item.parentId == null && (kind == null || item.taskType == kind))
+            .where((item) =>
+                item.parentId == null &&
+                (kind == null || item.taskType == kind))
             .toList();
 
         return Column(
@@ -155,10 +158,11 @@ class _Filters extends StatelessWidget {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<TaskKind?>(
-                    value: kind,
+                    initialValue: kind,
                     decoration: const InputDecoration(labelText: '入口'),
                     items: [
-                      const DropdownMenuItem<TaskKind?>(value: null, child: Text('全部')),
+                      const DropdownMenuItem<TaskKind?>(
+                          value: null, child: Text('全部')),
                       ...TaskKind.values.map(
                         (item) => DropdownMenuItem<TaskKind?>(
                           value: item,
@@ -172,10 +176,11 @@ class _Filters extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: DropdownButtonFormField<String?>(
-                    value: categoryId,
+                    initialValue: categoryId,
                     decoration: const InputDecoration(labelText: '分类'),
                     items: [
-                      const DropdownMenuItem<String?>(value: null, child: Text('全部')),
+                      const DropdownMenuItem<String?>(
+                          value: null, child: Text('全部')),
                       ...categories.map(
                         (item) => DropdownMenuItem<String?>(
                           value: item.id,
@@ -261,10 +266,14 @@ class _TaskCard extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  _Meta(icon: Icons.category_outlined, text: task.categoryName ?? task.taskType.label),
+                  _Meta(
+                      icon: Icons.category_outlined,
+                      text: task.categoryName ?? task.taskType.label),
                   _Meta(icon: Icons.place_outlined, text: task.locationText),
                   _Meta(icon: Icons.payments_outlined, text: task.budgetLabel),
-                  _Meta(icon: Icons.schedule_outlined, text: formatDate(task.createdAt)),
+                  _Meta(
+                      icon: Icons.schedule_outlined,
+                      text: formatDate(task.createdAt)),
                 ],
               ),
             ],

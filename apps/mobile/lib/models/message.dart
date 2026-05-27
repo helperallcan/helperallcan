@@ -19,7 +19,8 @@ class ChatMessage {
       conversationId: map['conversation_id'] as String,
       senderId: map['sender_id'] as String,
       body: map['body'] as String? ?? '',
-      createdAt: DateTime.tryParse(map['created_at'] as String? ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(map['created_at'] as String? ?? '') ??
+          DateTime.now(),
     );
   }
 }

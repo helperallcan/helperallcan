@@ -1,0 +1,4 @@
+storePassword=change-me
+keyPassword=change-me
+keyAlias=zhao-bang-shou
+storeFile=C:/Users/your-name/.zhao_bang_shou/android_upload_keystore.jks

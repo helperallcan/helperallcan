@@ -13,6 +13,9 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  CI_SUPABASE_URL: https://example.supabase.co
+  CI_SUPABASE_ANON_KEY: ci-anon-key
+  CI_SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -23,6 +26,10 @@ jobs:
     name: Next.js Admin
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ env.CI_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.CI_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ env.CI_SUPABASE_SERVICE_ROLE_KEY }}
     defaults:
       run:
         working-directory: apps/admin
@@ -52,7 +59,7 @@ jobs:
   mobile:
     name: Flutter App
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 35
     defaults:
       run:
         working-directory: apps/mobile
@@ -74,6 +81,34 @@ jobs:
 
       - name: Test
         run: flutter test
+
+      - name: Build web
+        run: |
+          flutter build web \
+            --dart-define=SUPABASE_URL=${{ env.CI_SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ env.CI_SUPABASE_ANON_KEY }}
+
+      - name: Build Android debug APK
+        run: |
+          flutter build apk --debug \
+            --dart-define=SUPABASE_URL=${{ env.CI_SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ env.CI_SUPABASE_ANON_KEY }}
+
+      - name: Upload web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: zhao-bang-shou-web
+          path: apps/mobile/build/web
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload Android debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: zhao-bang-shou-debug-apk
+          path: apps/mobile/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
 
   supabase:
     name: Supabase SQL

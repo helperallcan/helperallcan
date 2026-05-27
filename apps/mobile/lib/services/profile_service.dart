@@ -1,5 +1,16 @@
 import '../core/supabase_client.dart';
+import '../models/helper_profile.dart';
 import '../models/profile.dart';
+
+class HelperDashboardData {
+  const HelperDashboardData({
+    required this.profile,
+    required this.workItems,
+  });
+
+  final HelperProfile? profile;
+  final List<HelperWorkItem> workItems;
+}
 
 class ProfileService {
   Future<UserProfile?> currentProfile() async {
@@ -66,7 +77,9 @@ class ProfileService {
     }
 
     final user = supabase.auth.currentUser!;
-    await supabase.from('profiles').update({'role': role.value}).eq('id', user.id);
+    await supabase
+        .from('profiles')
+        .update({'role': role.value}).eq('id', user.id);
   }
 
   Future<UserProfile> saveProfile({
@@ -101,6 +114,38 @@ class ProfileService {
     return row == null ? null : Map<String, dynamic>.from(row);
   }
 
+  Future<HelperDashboardData> helperDashboard() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      return const HelperDashboardData(profile: null, workItems: []);
+    }
+
+    final profileRow = await supabase
+        .from('helper_profiles')
+        .select()
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+    final offerRows = await supabase
+        .from('task_offers')
+        .select(
+          'id, task_id, amount, status, created_at, tasks:task_id(id, creator_id, assigned_helper_id, task_type, title, description, location_text, city, district, budget_min, budget_max, is_urgent, status, completion_note, completion_proof_url, completed_at, created_at, categories:category_id(name), subcategories:subcategory_id(name))',
+        )
+        .eq('helper_id', user.id)
+        .order('created_at', ascending: false)
+        .limit(20);
+
+    return HelperDashboardData(
+      profile: profileRow == null
+          ? null
+          : HelperProfile.fromMap(Map<String, dynamic>.from(profileRow)),
+      workItems: (offerRows as List<dynamic>)
+          .map((row) =>
+              HelperWorkItem.fromMap(Map<String, dynamic>.from(row as Map)))
+          .toList(),
+    );
+  }
+
   Future<void> saveHelperProfile({
     required String headline,
     required String bio,
@@ -120,6 +165,10 @@ class ProfileService {
     }, onConflict: 'user_id');
 
     await setRole(AppRole.helper);
+  }
+
+  Future<void> requestHelperVerification() async {
+    await supabase.rpc('request_helper_verification');
   }
 
   String? _blankToNull(String? value) {

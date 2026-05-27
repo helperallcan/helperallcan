@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/app_assets.dart';
 import '../../models/task.dart';
 import '../../services/profile_service.dart';
 import '../../widgets/app_shell.dart';
@@ -118,18 +119,53 @@ class _WelcomeHeader extends StatelessWidget {
                       child: _WelcomeCopy(name: name, style: titleStyle)),
                   const SizedBox(width: 24),
                   const Expanded(
-                      flex: 2,
-                      child: _WelcomeActions(alignment: WrapAlignment.end)),
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _WelcomeArt(height: 188),
+                        SizedBox(height: 16),
+                        _WelcomeActions(alignment: WrapAlignment.end),
+                      ],
+                    ),
+                  ),
                 ],
               )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _WelcomeCopy(name: name, style: titleStyle),
+                  const SizedBox(height: 16),
+                  const _WelcomeArt(height: 156),
                   const SizedBox(height: 18),
                   const _WelcomeActions(alignment: WrapAlignment.start),
                 ],
               ),
+      ),
+    );
+  }
+}
+
+class _WelcomeArt extends StatelessWidget {
+  const _WelcomeArt({required this.height});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xfff8fafc),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.asset(
+          AppAssets.homeHero,
+          height: height,
+          fit: BoxFit.cover,
+          alignment: Alignment.center,
+        ),
       ),
     );
   }

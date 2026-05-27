@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/app_assets.dart';
 import '../../core/formatters.dart';
 import '../../models/app_category.dart';
 import '../../models/task.dart';
@@ -97,7 +98,7 @@ class _TaskListPageState extends State<TaskListPage> {
                 }
                 final tasks = snapshot.data ?? [];
                 if (tasks.isEmpty) {
-                  return const Center(child: Text('暂时没有符合条件的任务'));
+                  return const _EmptyTasksState();
                 }
                 return RefreshIndicator(
                   onRefresh: () async => _refresh(),
@@ -113,6 +114,49 @@ class _TaskListPageState extends State<TaskListPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _EmptyTasksState extends StatelessWidget {
+  const _EmptyTasksState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                AppAssets.emptyTasks,
+                width: 220,
+                height: 220,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '暂时没有符合条件的任务',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '试试放宽分类、地点或加急筛选。',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

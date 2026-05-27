@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/app_assets.dart';
 import '../../core/validators.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/primary_button.dart';
@@ -86,6 +87,8 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    const _AuthArtwork(),
+                    const SizedBox(height: 22),
                     Text(
                       'Helper',
                       style:
@@ -202,6 +205,29 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthArtwork extends StatelessWidget {
+  const _AuthArtwork();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xfff8fafc),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.asset(
+          AppAssets.authHero,
+          height: 210,
+          fit: BoxFit.contain,
         ),
       ),
     );

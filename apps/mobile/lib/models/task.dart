@@ -33,6 +33,28 @@ enum TaskStatus {
   final String value;
   final String label;
 
+  bool get canReceiveOffers =>
+      this == TaskStatus.open || this == TaskStatus.offered;
+
+  bool get canOwnerCancel =>
+      this == TaskStatus.draft ||
+      this == TaskStatus.open ||
+      this == TaskStatus.offered ||
+      this == TaskStatus.assigned ||
+      this == TaskStatus.inProgress;
+
+  bool get canOwnerReopen =>
+      this == TaskStatus.assigned || this == TaskStatus.inProgress;
+
+  bool get canConfirmCompletion =>
+      this == TaskStatus.assigned || this == TaskStatus.inProgress;
+
+  bool get isClosed =>
+      this == TaskStatus.completed ||
+      this == TaskStatus.cancelled ||
+      this == TaskStatus.rejected ||
+      this == TaskStatus.hidden;
+
   static TaskStatus fromValue(String? value) {
     return TaskStatus.values.firstWhere(
       (status) => status.value == value,
@@ -76,6 +98,9 @@ class Task {
     this.completionNote,
     this.completionProofUrl,
     this.completedAt,
+    this.cancelledAt,
+    this.cancellationReason,
+    this.expiresAt,
     this.categoryId,
     this.subcategoryId,
     this.categoryName,
@@ -107,6 +132,9 @@ class Task {
   final String? completionNote;
   final String? completionProofUrl;
   final DateTime? completedAt;
+  final DateTime? cancelledAt;
+  final String? cancellationReason;
+  final DateTime? expiresAt;
   final DateTime createdAt;
   final List<TaskImage> images;
 
@@ -154,6 +182,9 @@ class Task {
       completionNote: map['completion_note'] as String?,
       completionProofUrl: map['completion_proof_url'] as String?,
       completedAt: DateTime.tryParse(map['completed_at'] as String? ?? ''),
+      cancelledAt: DateTime.tryParse(map['cancelled_at'] as String? ?? ''),
+      cancellationReason: map['cancellation_reason'] as String?,
+      expiresAt: DateTime.tryParse(map['expires_at'] as String? ?? ''),
       createdAt: DateTime.tryParse(map['created_at'] as String? ?? '') ??
           DateTime.now(),
       images: images,

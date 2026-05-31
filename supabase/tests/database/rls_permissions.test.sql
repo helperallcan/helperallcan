@@ -3,7 +3,7 @@
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(30);
+select plan(36);
 
 create temporary table test_flags (
   name text primary key,
@@ -290,6 +290,178 @@ select is(
   (select status from public.tasks where id = '00000000-0000-0000-0000-000000000201'),
   'offered'::public.task_status,
   'task status changes to offered after first quote'
+);
+
+insert into test_flags (name) values ('helper_cannot_duplicate_offer');
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000102';
+set local "request.jwt.claim.role" = 'authenticated';
+do $$
+begin
+  insert into public.task_offers (
+    task_id,
+    helper_id,
+    amount,
+    message
+  )
+  values (
+    '00000000-0000-0000-0000-000000000201',
+    '00000000-0000-0000-0000-000000000102',
+    75,
+    'Duplicate quote.'
+  );
+
+  update test_flags
+  set passed = false,
+      detail = 'duplicate offer unexpectedly succeeded'
+  where name = 'helper_cannot_duplicate_offer';
+exception
+  when unique_violation then
+    update test_flags
+    set passed = true,
+        detail = sqlerrm
+    where name = 'helper_cannot_duplicate_offer';
+end
+$$;
+reset role;
+select ok(
+  (select passed from test_flags where name = 'helper_cannot_duplicate_offer'),
+  'helpers cannot quote the same task twice'
+);
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000101';
+set local "request.jwt.claim.role" = 'authenticated';
+insert into public.tasks (
+  id,
+  creator_id,
+  title,
+  description,
+  task_type,
+  location_text
+)
+values (
+  '00000000-0000-0000-0000-000000000202',
+  '00000000-0000-0000-0000-000000000101',
+  'Withdraw test task',
+  'Task for checking offer withdrawal.',
+  'help'::public.task_type,
+  'Singapore'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000102';
+set local "request.jwt.claim.role" = 'authenticated';
+insert into public.task_offers (
+  id,
+  task_id,
+  helper_id,
+  amount,
+  message
+)
+values (
+  '00000000-0000-0000-0000-000000000402',
+  '00000000-0000-0000-0000-000000000202',
+  '00000000-0000-0000-0000-000000000102',
+  60,
+  'I can withdraw this quote.'
+);
+select is(
+  public.withdraw_task_offer('00000000-0000-0000-0000-000000000402'),
+  'withdrawn'::public.offer_status,
+  'helpers can withdraw pending offers through the RPC'
+);
+reset role;
+select is(
+  (select status from public.tasks where id = '00000000-0000-0000-0000-000000000202'),
+  'open'::public.task_status,
+  'tasks return to open when the last pending offer is withdrawn'
+);
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000101';
+set local "request.jwt.claim.role" = 'authenticated';
+insert into public.tasks (
+  id,
+  creator_id,
+  title,
+  description,
+  task_type,
+  location_text
+)
+values (
+  '00000000-0000-0000-0000-000000000203',
+  '00000000-0000-0000-0000-000000000101',
+  'Cancel test task',
+  'Task for checking task cancellation.',
+  'help'::public.task_type,
+  'Singapore'
+);
+select is(
+  public.cancel_task('00000000-0000-0000-0000-000000000203', 'No longer needed.'),
+  'cancelled'::public.task_status,
+  'task owners can cancel active tasks through the RPC'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000101';
+set local "request.jwt.claim.role" = 'authenticated';
+insert into public.tasks (
+  id,
+  creator_id,
+  title,
+  description,
+  task_type,
+  location_text
+)
+values (
+  '00000000-0000-0000-0000-000000000204',
+  '00000000-0000-0000-0000-000000000101',
+  'Reopen test task',
+  'Task for checking helper reselection.',
+  'help'::public.task_type,
+  'Singapore'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000102';
+set local "request.jwt.claim.role" = 'authenticated';
+insert into public.task_offers (
+  id,
+  task_id,
+  helper_id,
+  amount,
+  message
+)
+values (
+  '00000000-0000-0000-0000-000000000404',
+  '00000000-0000-0000-0000-000000000204',
+  '00000000-0000-0000-0000-000000000102',
+  90,
+  'I can be selected first.'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000101';
+set local "request.jwt.claim.role" = 'authenticated';
+do $$
+begin
+  perform public.accept_task_offer('00000000-0000-0000-0000-000000000404');
+end
+$$;
+select is(
+  public.reopen_task_for_offers('00000000-0000-0000-0000-000000000204', 'Need another helper.'),
+  'open'::public.task_status,
+  'task owners can reopen assigned tasks for new offers'
+);
+reset role;
+select ok(
+  (select assigned_helper_id is null from public.tasks where id = '00000000-0000-0000-0000-000000000204'),
+  'reopened tasks clear the selected helper'
 );
 
 set local role authenticated;

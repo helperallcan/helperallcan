@@ -9,6 +9,8 @@ enum OfferStatus {
   final String value;
   final String label;
 
+  bool get canWithdraw => this == OfferStatus.pending;
+
   static OfferStatus fromValue(String? value) {
     return OfferStatus.values.firstWhere(
       (status) => status.value == value,

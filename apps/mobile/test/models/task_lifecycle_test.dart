@@ -19,6 +19,8 @@ void main() {
       'completion_note': 'All boxes moved.',
       'completion_proof_url': 'helper-id/task-id/proof.jpg',
       'completed_at': '2026-05-25T10:15:00.000Z',
+      'cancelled_at': null,
+      'expires_at': '2026-06-25T09:00:00.000Z',
       'created_at': '2026-05-25T09:00:00.000Z',
     });
 
@@ -27,6 +29,17 @@ void main() {
     expect(task.completionNote, 'All boxes moved.');
     expect(task.completionProofUrl, 'helper-id/task-id/proof.jpg');
     expect(task.completedAt, isNotNull);
+    expect(task.expiresAt, isNotNull);
+    expect(task.status.isClosed, isTrue);
+  });
+
+  test('TaskStatus exposes lifecycle action rules', () {
+    expect(TaskStatus.open.canReceiveOffers, isTrue);
+    expect(TaskStatus.offered.canReceiveOffers, isTrue);
+    expect(TaskStatus.assigned.canOwnerReopen, isTrue);
+    expect(TaskStatus.inProgress.canConfirmCompletion, isTrue);
+    expect(TaskStatus.completed.canOwnerCancel, isFalse);
+    expect(TaskStatus.cancelled.isClosed, isTrue);
   });
 
   test('TaskOffer.fromMap maps helper profile display name', () {
@@ -43,9 +56,17 @@ void main() {
     });
 
     expect(offer.status, OfferStatus.accepted);
+    expect(offer.status.canWithdraw, isFalse);
     expect(offer.amount, 80);
     expect(offer.estimatedMinutes, 45);
     expect(offer.helperName, 'Ah Ming');
+  });
+
+  test('OfferStatus only allows pending offers to be withdrawn', () {
+    expect(OfferStatus.pending.canWithdraw, isTrue);
+    expect(OfferStatus.accepted.canWithdraw, isFalse);
+    expect(OfferStatus.rejected.canWithdraw, isFalse);
+    expect(OfferStatus.withdrawn.canWithdraw, isFalse);
   });
 
   test('ChatMessage.fromMap falls back to empty body safely', () {

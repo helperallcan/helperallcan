@@ -62,6 +62,74 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
     );
   }
 
+  Future<void> _cancelTask(Task task) async {
+    final reason = await showDialog<String?>(
+      context: context,
+      builder: (context) => const _TaskActionDialog(
+        title: '取消任务',
+        message: '取消后任务会关闭，帮手不能继续报价或聊天。',
+        actionLabel: '确认取消',
+        reasonLabel: '取消原因（可选）',
+      ),
+    );
+    if (reason == null) return;
+
+    await _taskService.cancelTask(taskId: task.id, reason: reason);
+    if (!mounted) return;
+    _reload();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('任务已取消')),
+    );
+  }
+
+  Future<void> _reopenTask(Task task) async {
+    final reason = await showDialog<String?>(
+      context: context,
+      builder: (context) => const _TaskActionDialog(
+        title: '重新开放任务',
+        message: '当前选择的帮手会被移除，任务会重新回到可报价状态。',
+        actionLabel: '重新开放',
+        reasonLabel: '给帮手的说明（可选）',
+      ),
+    );
+    if (reason == null) return;
+
+    await _taskService.reopenTaskForOffers(taskId: task.id, reason: reason);
+    if (!mounted) return;
+    _reload();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('任务已重新开放')),
+    );
+  }
+
+  Future<void> _withdrawOffer(TaskOffer offer) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('撤回报价'),
+        content: const Text('撤回后这次报价会失效，不能重复提交同一个任务的报价。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('再想想'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('确认撤回'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    await _taskService.withdrawOffer(offer.id);
+    if (!mounted) return;
+    _reload();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('报价已撤回')),
+    );
+  }
+
   Future<void> _submitCompletionProof(Task task) async {
     final result = await showDialog<_CompletionProofResult>(
       context: context,
@@ -173,6 +241,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
           final userId = supabase.auth.currentUser?.id;
           final isOwner = task.creatorId == userId;
           final isAssignedHelper = task.assignedHelperId == userId;
+          final myOffer = _offerForUser(data.offers, userId);
           final oppositeUserId = isOwner
               ? task.assignedHelperId
               : isAssignedHelper
@@ -247,6 +316,8 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
                   },
                   onChat: _openChat,
                   onComplete: _confirmCompleted,
+                  onCancel: () => _cancelTask(task),
+                  onReopen: () => _reopenTask(task),
                 ),
               ] else if (isAssignedHelper) ...[
                 PrimaryButton(
@@ -256,24 +327,34 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
                 ),
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
-                  onPressed: task.status == TaskStatus.completed
+                  onPressed: !task.status.canConfirmCompletion
                       ? null
                       : () => _submitCompletionProof(task),
                   icon: const Icon(Icons.task_alt_outlined),
                   label: const Text('上传完成证明'),
                 ),
               ] else ...[
-                _OfferPanel(
-                  onSubmit: (amount, message, minutes) async {
-                    await _taskService.createOffer(
-                      taskId: task.id,
-                      amount: amount,
-                      message: message,
-                      estimatedMinutes: minutes,
-                    );
-                    _reload();
-                  },
-                ),
+                if (myOffer != null)
+                  _MyOfferPanel(
+                    offer: myOffer,
+                    onWithdraw: myOffer.status.canWithdraw
+                        ? () => _withdrawOffer(myOffer)
+                        : null,
+                  )
+                else if (task.status.canReceiveOffers)
+                  _OfferPanel(
+                    onSubmit: (amount, message, minutes) async {
+                      await _taskService.createOffer(
+                        taskId: task.id,
+                        amount: amount,
+                        message: message,
+                        estimatedMinutes: minutes,
+                      );
+                      _reload();
+                    },
+                  )
+                else
+                  _TaskClosedNotice(status: task.status),
               ],
               if ((isOwner || isAssignedHelper) && oppositeUserId != null) ...[
                 const SizedBox(height: 12),
@@ -300,6 +381,14 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
       ),
     );
   }
+}
+
+TaskOffer? _offerForUser(List<TaskOffer> offers, String? userId) {
+  if (userId == null) return null;
+  for (final offer in offers) {
+    if (offer.helperId == userId) return offer;
+  }
+  return null;
 }
 
 class _InfoCard extends StatelessWidget {
@@ -554,6 +643,8 @@ class _OwnerActions extends StatelessWidget {
     required this.onAccept,
     required this.onChat,
     required this.onComplete,
+    required this.onCancel,
+    required this.onReopen,
   });
 
   final Task task;
@@ -561,6 +652,8 @@ class _OwnerActions extends StatelessWidget {
   final ValueChanged<TaskOffer> onAccept;
   final VoidCallback onChat;
   final VoidCallback onComplete;
+  final VoidCallback onCancel;
+  final VoidCallback onReopen;
 
   @override
   Widget build(BuildContext context) {
@@ -575,9 +668,23 @@ class _OwnerActions extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
-            onPressed: task.status == TaskStatus.completed ? null : onComplete,
+            onPressed: task.status.canConfirmCompletion ? onComplete : null,
             icon: const Icon(Icons.task_alt_outlined),
             label: const Text('确认完成'),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: task.status.canOwnerReopen ? onReopen : null,
+            icon: const Icon(Icons.refresh_outlined),
+            label: const Text('重新选择帮手'),
+          ),
+          const SizedBox(height: 16),
+        ],
+        if (task.status.canOwnerCancel) ...[
+          OutlinedButton.icon(
+            onPressed: onCancel,
+            icon: const Icon(Icons.cancel_outlined),
+            label: const Text('取消任务'),
           ),
           const SizedBox(height: 16),
         ],
@@ -619,6 +726,97 @@ class _OwnerActions extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _MyOfferPanel extends StatelessWidget {
+  const _MyOfferPanel({
+    required this.offer,
+    required this.onWithdraw,
+  });
+
+  final TaskOffer offer;
+  final VoidCallback? onWithdraw;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.local_offer_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '我的报价',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                ),
+                Chip(
+                  label: Text(offer.status.label),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text('报价：${formatMoney(offer.amount)}'),
+            if (offer.estimatedMinutes != null)
+              Text('预计用时：${offer.estimatedMinutes} 分钟'),
+            if (offer.message != null && offer.message!.trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(offer.message!),
+            ],
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: onWithdraw,
+              icon: const Icon(Icons.undo_outlined),
+              label: const Text('撤回报价'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TaskClosedNotice extends StatelessWidget {
+  const _TaskClosedNotice({required this.status});
+
+  final TaskStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(
+              Icons.lock_outline,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '当前任务状态为「${status.label}」，暂时不能提交报价。',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -722,6 +920,62 @@ class _OfferPanelState extends State<_OfferPanel> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _TaskActionDialog extends StatefulWidget {
+  const _TaskActionDialog({
+    required this.title,
+    required this.message,
+    required this.actionLabel,
+    required this.reasonLabel,
+  });
+
+  final String title;
+  final String message;
+  final String actionLabel;
+  final String reasonLabel;
+
+  @override
+  State<_TaskActionDialog> createState() => _TaskActionDialogState();
+}
+
+class _TaskActionDialogState extends State<_TaskActionDialog> {
+  final _reason = TextEditingController();
+
+  @override
+  void dispose() {
+    _reason.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(widget.message),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _reason,
+            maxLines: 3,
+            decoration: InputDecoration(labelText: widget.reasonLabel),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _reason.text),
+          child: Text(widget.actionLabel),
+        ),
+      ],
     );
   }
 }

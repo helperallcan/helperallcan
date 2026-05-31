@@ -175,6 +175,34 @@ class TaskService {
     await supabase.rpc('confirm_task_completed', params: {'p_task_id': taskId});
   }
 
+  Future<TaskStatus> cancelTask({
+    required String taskId,
+    String? reason,
+  }) async {
+    final result = await supabase.rpc('cancel_task', params: {
+      'p_task_id': taskId,
+      'p_reason': normalizeOptionalText(reason),
+    });
+    return TaskStatus.fromValue(result as String?);
+  }
+
+  Future<TaskStatus> reopenTaskForOffers({
+    required String taskId,
+    String? reason,
+  }) async {
+    final result = await supabase.rpc('reopen_task_for_offers', params: {
+      'p_task_id': taskId,
+      'p_reason': normalizeOptionalText(reason),
+    });
+    return TaskStatus.fromValue(result as String?);
+  }
+
+  Future<OfferStatus> withdrawOffer(String offerId) async {
+    final result = await supabase
+        .rpc('withdraw_task_offer', params: {'p_offer_id': offerId});
+    return OfferStatus.fromValue(result as String?);
+  }
+
   Future<void> createReview({
     required String taskId,
     required String revieweeId,

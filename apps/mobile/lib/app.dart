@@ -16,8 +16,8 @@ import 'features/tasks/task_detail_page.dart';
 import 'features/tasks/task_list_page.dart';
 import 'models/task.dart';
 
-class ZhaoBangShouApp extends StatelessWidget {
-  const ZhaoBangShouApp({super.key});
+class HelperApp extends StatelessWidget {
+  const HelperApp({super.key});
 
   @override
   Widget build(BuildContext context) {

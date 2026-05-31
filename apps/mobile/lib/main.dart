@@ -14,5 +14,5 @@ Future<void> main() async {
     );
   }
 
-  runApp(const ZhaoBangShouApp());
+  runApp(const HelperApp());
 }

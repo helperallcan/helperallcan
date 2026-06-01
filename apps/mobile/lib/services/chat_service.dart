@@ -28,6 +28,14 @@ class ChatService {
     });
   }
 
+  Future<int> markConversationRead(String conversationId) async {
+    final count = await supabase.rpc(
+      'mark_conversation_read',
+      params: {'p_conversation_id': conversationId},
+    );
+    return count as int? ?? 0;
+  }
+
   Future<String?> findConversationForTask(String taskId) async {
     final user = supabase.auth.currentUser!;
     final row = await supabase

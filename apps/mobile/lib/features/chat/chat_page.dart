@@ -19,11 +19,26 @@ class _ChatPageState extends State<ChatPage> {
   final _service = ChatService();
   final _message = TextEditingController();
   bool _sending = false;
+  String? _lastReadMessageId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _markRead());
+  }
 
   @override
   void dispose() {
     _message.dispose();
     super.dispose();
+  }
+
+  Future<void> _markRead() async {
+    try {
+      await _service.markConversationRead(widget.conversationId);
+    } catch (_) {
+      // Older databases may not have the unread RPC until migrations run.
+    }
   }
 
   Future<void> _send() async {
@@ -59,6 +74,18 @@ class _ChatPageState extends State<ChatPage> {
                 }
                 if (messages.isEmpty) {
                   return const Center(child: Text('还没有消息'));
+                }
+                final unreadMessages = messages
+                    .where((message) => message.isUnreadFor(currentUserId))
+                    .toList();
+                if (unreadMessages.isNotEmpty &&
+                    _lastReadMessageId != unreadMessages.last.id) {
+                  _lastReadMessageId = unreadMessages.last.id;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      _markRead();
+                    }
+                  });
                 }
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),

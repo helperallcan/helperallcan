@@ -3,7 +3,7 @@
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(36);
+select plan(43);
 
 create temporary table test_flags (
   name text primary key,
@@ -286,6 +286,21 @@ select is(
 );
 reset role;
 
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000101';
+set local "request.jwt.claim.role" = 'authenticated';
+select is(
+  (select count(*)::integer from public.notifications where data->>'offer_id' = '00000000-0000-0000-0000-000000000401'),
+  1,
+  'task owners receive notifications for new offers'
+);
+select is(
+  public.unread_notification_count(),
+  1,
+  'task owners can count unread notifications'
+);
+reset role;
+
 select is(
   (select status from public.tasks where id = '00000000-0000-0000-0000-000000000201'),
   'offered'::public.task_status,
@@ -561,6 +576,35 @@ select is(
   (select count(*)::integer from public.messages where conversation_id = (select id from test_ids where name = 'accepted_conversation')),
   1,
   'conversation participants can send messages'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000101';
+set local "request.jwt.claim.role" = 'authenticated';
+select is(
+  public.unread_chat_count(),
+  1,
+  'message recipients can count unread chat messages'
+);
+select is(
+  public.mark_conversation_read((select id from test_ids where name = 'accepted_conversation')),
+  1,
+  'message recipients can mark a conversation read'
+);
+select is(
+  public.unread_chat_count(),
+  0,
+  'marking a conversation read clears unread chat messages'
+);
+select ok(
+  public.mark_all_notifications_read() >= 1,
+  'users can mark all notifications read'
+);
+select is(
+  public.unread_notification_count(),
+  0,
+  'marking all notifications read clears the unread notification count'
 );
 reset role;
 

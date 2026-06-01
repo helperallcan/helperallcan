@@ -3,8 +3,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/app_assets.dart';
 import '../../models/task.dart';
+import '../../services/notification_service.dart';
 import '../../services/profile_service.dart';
 import '../../widgets/app_shell.dart';
+import '../../widgets/unread_icon_badge.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -16,11 +18,7 @@ class HomePage extends StatelessWidget {
     return AppShell(
       title: 'Helper',
       actions: [
-        IconButton(
-          tooltip: '通知',
-          onPressed: () => context.go('/notifications'),
-          icon: const Icon(Icons.notifications_none_outlined),
-        ),
+        const _NotificationActionButton(),
         IconButton(
           tooltip: '我的资料',
           onPressed: () => context.go('/profile'),
@@ -87,6 +85,30 @@ class HomePage extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _NotificationActionButton extends StatelessWidget {
+  const _NotificationActionButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<UnreadSummary>(
+      stream: NotificationService().watchUnreadSummary(),
+      builder: (context, snapshot) {
+        final count = snapshot.data?.total ?? 0;
+        return IconButton(
+          tooltip: count > 0 ? '通知，$count 条未读' : '通知',
+          onPressed: () => context.go('/notifications'),
+          icon: UnreadIconBadge(
+            icon: count > 0
+                ? Icons.notifications_active_outlined
+                : Icons.notifications_none_outlined,
+            count: count,
+          ),
+        );
+      },
     );
   }
 }

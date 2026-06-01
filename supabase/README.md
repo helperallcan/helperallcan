@@ -4,7 +4,8 @@
 
 1. 运行 `migrations/202605190001_initial_schema.sql`
 2. 运行 `migrations/202605190002_rls_policies.sql`
-3. 运行 `seed.sql`
+3. 按文件名顺序运行后续 `migrations/*.sql`
+4. 运行 `seed.sql`
 
 ## Realtime
 
@@ -15,6 +16,12 @@ Migration 会把以下表加入 `supabase_realtime` publication：
 - `conversations`
 - `messages`
 - `notifications`
+
+## 通知与推送预留
+
+- `notifications` 保存站内通知和未读状态
+- `messages.read_at` 保存聊天消息是否已读
+- `push_tokens` 预留 Android / iOS / Web 推送 token，后续接入 FCM 或 APNs 时使用
 
 ## Storage
 

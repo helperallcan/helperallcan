@@ -1,4 +1,5 @@
 import { StatusBadge } from '@/components/status-badge';
+import { getStatusLabel } from '@/lib/moderation';
 import { adminSupabase } from '@/lib/supabase/admin';
 
 import { updateTaskStatusAction } from '../actions';
@@ -49,11 +50,13 @@ export default async function UrgentPage() {
                     <form className="actions" action={updateTaskStatusAction}>
                       <input type="hidden" name="taskId" value={task.id} />
                       <select name="status" defaultValue={task.status}>
-                        <option value="open">open</option>
-                        <option value="hidden">hidden</option>
-                        <option value="rejected">rejected</option>
+                        {(['open', 'hidden', 'rejected'] as const).map((status) => (
+                          <option key={status} value={status}>
+                            {getStatusLabel(status)}
+                          </option>
+                        ))}
                       </select>
-                      <input name="moderationNote" placeholder="备注" />
+                      <textarea name="moderationNote" placeholder="备注" rows={2} />
                       <button className="button" type="submit">
                         保存
                       </button>

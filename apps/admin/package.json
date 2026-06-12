@@ -1,12 +1,14 @@
 {
   "name": "helper-admin",
   "private": true,
+  "type": "module",
   "version": "0.1.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "lint": "eslint .",
-    "check": "npm run lint && npm run build && npm audit --omit=dev"
+    "test": "node --experimental-strip-types --test lib/moderation.test.ts",
+    "check": "npm run lint && npm run test && npm run build && npm audit --omit=dev"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

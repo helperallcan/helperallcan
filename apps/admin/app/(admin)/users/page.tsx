@@ -6,7 +6,9 @@ import { banUserAction, unbanUserAction } from '../actions';
 export default async function UsersPage() {
   const { data: users } = await adminSupabase
     .from('profiles')
-    .select('id, display_name, phone, role, city, district, is_blocked, blocked_reason, created_at')
+    .select(
+      'id, display_name, phone, role, city, district, rating_average, rating_count, is_blocked, blocked_reason, created_at'
+    )
     .order('created_at', { ascending: false })
     .limit(100);
 
@@ -26,6 +28,7 @@ export default async function UsersPage() {
               <th>用户</th>
               <th>身份</th>
               <th>地点</th>
+              <th>评分</th>
               <th>状态</th>
               <th>操作</th>
             </tr>
@@ -39,6 +42,10 @@ export default async function UsersPage() {
                 </td>
                 <td>{user.role}</td>
                 <td>{[user.city, user.district].filter(Boolean).join(' / ') || '-'}</td>
+                <td>
+                  {user.rating_average} / 5
+                  <div className="muted">{user.rating_count} 条评价</div>
+                </td>
                 <td>
                   <StatusBadge value={user.is_blocked ? 'blocked' : 'active'} />
                   {user.blocked_reason ? <div className="muted">{user.blocked_reason}</div> : null}
@@ -54,7 +61,7 @@ export default async function UsersPage() {
                   ) : (
                     <form className="actions" action={banUserAction}>
                       <input type="hidden" name="userId" value={user.id} />
-                      <input name="reason" placeholder="封禁原因" required />
+                      <textarea name="reason" placeholder="封禁原因" required rows={2} />
                       <button className="button danger" type="submit">
                         封禁
                       </button>

@@ -33,6 +33,10 @@ textarea {
   font: inherit;
 }
 
+textarea {
+  resize: vertical;
+}
+
 .login-page {
   min-height: 100vh;
   display: grid;
@@ -214,6 +218,25 @@ th {
   gap: 8px;
 }
 
+.actions input,
+.actions select,
+.actions textarea {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.actions textarea {
+  min-width: 180px;
+}
+
+.compact-form {
+  border-top: 1px solid var(--line);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
 .status {
   display: inline-flex;
   border-radius: 999px;
@@ -251,6 +274,17 @@ th {
 
 .error {
   color: var(--danger);
+}
+
+.log-details {
+  max-width: 440px;
+  max-height: 140px;
+  margin: 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 @media (max-width: 860px) {

@@ -9,7 +9,8 @@ const links = [
   ['分类', '/categories'],
   ['加急', '/urgent'],
   ['认证', '/verifications'],
-  ['付款', '/payments']
+  ['付款', '/payments'],
+  ['日志', '/logs']
 ];
 
 export function AdminNav() {

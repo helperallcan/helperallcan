@@ -1,4 +1,5 @@
 import { StatusBadge } from '@/components/status-badge';
+import { getStatusLabel, verificationStatusValues } from '@/lib/moderation';
 import { adminSupabase } from '@/lib/supabase/admin';
 
 import { updateHelperVerificationAction } from '../actions';
@@ -54,10 +55,13 @@ export default async function VerificationsPage() {
                     <form className="actions" action={updateHelperVerificationAction}>
                       <input type="hidden" name="userId" value={helper.user_id} />
                       <select name="status" defaultValue="approved">
-                        <option value="approved">approved</option>
-                        <option value="rejected">rejected</option>
+                        {verificationStatusValues.map((status) => (
+                          <option key={status} value={status}>
+                            {getStatusLabel(status)}
+                          </option>
+                        ))}
                       </select>
-                      <input name="note" placeholder="审核备注" />
+                      <textarea name="note" placeholder="审核备注" rows={2} />
                       <button className="button" type="submit">
                         保存
                       </button>

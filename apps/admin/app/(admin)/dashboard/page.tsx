@@ -1,4 +1,5 @@
 import { StatCard } from '@/components/stat-card';
+import { StatusBadge } from '@/components/status-badge';
 import { adminSupabase } from '@/lib/supabase/admin';
 
 export default async function DashboardPage() {
@@ -80,7 +81,9 @@ export default async function DashboardPage() {
             {(latestTasks ?? []).map((task) => (
               <tr key={task.id}>
                 <td>{task.title}</td>
-                <td>{task.status}</td>
+                <td>
+                  <StatusBadge value={task.status} />
+                </td>
                 <td>{task.is_urgent ? '是' : '否'}</td>
                 <td>{new Date(task.created_at).toLocaleString('zh-CN')}</td>
               </tr>

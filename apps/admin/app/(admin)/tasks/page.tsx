@@ -1,14 +1,15 @@
 import { StatusBadge } from '@/components/status-badge';
+import { getStatusLabel, taskStatusValues } from '@/lib/moderation';
 import { adminSupabase } from '@/lib/supabase/admin';
 
 import { updateTaskStatusAction } from '../actions';
 
-const statuses = ['open', 'hidden', 'rejected', 'cancelled', 'completed'];
-
 export default async function TasksPage() {
   const { data: tasks } = await adminSupabase
     .from('tasks')
-    .select('id, title, description, status, task_type, is_urgent, location_text, budget_min, budget_max, moderation_note, created_at, creator:creator_id(display_name)')
+    .select(
+      'id, title, description, status, task_type, is_urgent, location_text, budget_min, budget_max, moderation_note, created_at, creator:creator_id(display_name)'
+    )
     .order('created_at', { ascending: false })
     .limit(120);
 
@@ -60,13 +61,13 @@ export default async function TasksPage() {
                     <form className="actions" action={updateTaskStatusAction}>
                       <input type="hidden" name="taskId" value={task.id} />
                       <select name="status" defaultValue={task.status}>
-                        {statuses.map((status) => (
+                        {taskStatusValues.map((status) => (
                           <option key={status} value={status}>
-                            {status}
+                            {getStatusLabel(status)}
                           </option>
                         ))}
                       </select>
-                      <input name="moderationNote" placeholder="审核备注" />
+                      <textarea name="moderationNote" placeholder="审核备注" rows={2} />
                       <button className="button" type="submit">
                         保存
                       </button>

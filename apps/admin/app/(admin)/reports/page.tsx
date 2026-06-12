@@ -1,7 +1,15 @@
 import { StatusBadge } from '@/components/status-badge';
+import {
+  canApplyReportEnforcement,
+  getReportEnforcementLabel,
+  getReportTargetLabel,
+  getStatusLabel,
+  reportEnforcementValues,
+  reportStatusValues
+} from '@/lib/moderation';
 import { adminSupabase } from '@/lib/supabase/admin';
 
-import { updateReportAction } from '../actions';
+import { applyReportEnforcementAction, updateReportAction } from '../actions';
 
 export default async function ReportsPage() {
   const { data: reports } = await adminSupabase
@@ -15,7 +23,7 @@ export default async function ReportsPage() {
       <div className="page-head">
         <div>
           <h1>举报处理</h1>
-          <p>处理用户或任务举报，必要时到用户/任务页执行封禁或隐藏。</p>
+          <p>处理用户或任务举报，可直接隐藏任务、拒绝任务或封禁用户。</p>
         </div>
       </div>
 
@@ -43,7 +51,7 @@ export default async function ReportsPage() {
                     </div>
                   </td>
                   <td>
-                    {report.target_type}
+                    {getReportTargetLabel(report.target_type)}
                     <div className="muted">{report.target_id}</div>
                   </td>
                   <td>
@@ -54,13 +62,34 @@ export default async function ReportsPage() {
                     <form className="actions" action={updateReportAction}>
                       <input type="hidden" name="reportId" value={report.id} />
                       <select name="status" defaultValue={report.status}>
-                        <option value="reviewing">reviewing</option>
-                        <option value="resolved">resolved</option>
-                        <option value="rejected">rejected</option>
+                        {reportStatusValues.map((status) => (
+                          <option key={status} value={status}>
+                            {getStatusLabel(status)}
+                          </option>
+                        ))}
                       </select>
-                      <input name="resolution" placeholder="处理结果" />
+                      <textarea name="resolution" placeholder="处理结果" rows={2} />
                       <button className="button" type="submit">
                         保存
+                      </button>
+                    </form>
+                    <form className="actions compact-form" action={applyReportEnforcementAction}>
+                      <input type="hidden" name="reportId" value={report.id} />
+                      <select name="enforcement" defaultValue="resolve_only">
+                        {reportEnforcementValues.map((enforcement) => (
+                          <option
+                            key={enforcement}
+                            value={enforcement}
+                            disabled={!canApplyReportEnforcement(report.target_type, enforcement)}
+                          >
+                            {getReportEnforcementLabel(enforcement)}
+                          </option>
+                        ))}
+                      </select>
+                      <input name="reason" placeholder="处理原因" />
+                      <textarea name="resolution" placeholder="给举报人的处理结果" rows={2} />
+                      <button className="button danger" type="submit">
+                        执行处理
                       </button>
                     </form>
                   </td>

@@ -13,4 +13,14 @@ void main() {
       expect(TaskService.normalizeOptionalText('  good work  '), 'good work');
     });
   });
+
+  group('TaskService.taskDetailSelect', () {
+    test('uses an explicit task offers relationship to avoid embed ambiguity',
+        () {
+      expect(
+        TaskService.taskDetailSelect,
+        contains('task_offers!task_offers_task_id_fkey'),
+      );
+    });
+  });
 }

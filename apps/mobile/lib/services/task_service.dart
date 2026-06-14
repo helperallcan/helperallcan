@@ -20,6 +20,9 @@ class TaskDetailData {
 }
 
 class TaskService {
+  static const taskDetailSelect =
+      '*, creator:creator_id(display_name), categories:category_id(name), subcategories:subcategory_id(name), task_images(*), task_offers:task_offers!task_offers_task_id_fkey(*, helper:helper_id(display_name, avatar_url)), reviews(*, reviewer:reviewer_id(display_name), reviewee:reviewee_id(display_name))';
+
   Future<List<AppCategory>> fetchCategories({TaskKind? taskKind}) async {
     dynamic query = supabase.from('categories').select().eq('is_active', true);
 
@@ -85,9 +88,7 @@ class TaskService {
   Future<TaskDetailData> fetchTaskDetail(String taskId) async {
     final row = await supabase
         .from('tasks')
-        .select(
-          '*, creator:creator_id(display_name), categories:category_id(name), subcategories:subcategory_id(name), task_images(*), task_offers(*, helper:helper_id(display_name, avatar_url)), reviews(*, reviewer:reviewer_id(display_name), reviewee:reviewee_id(display_name))',
-        )
+        .select(taskDetailSelect)
         .eq('id', taskId)
         .single();
 

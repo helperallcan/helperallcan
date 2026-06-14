@@ -18,13 +18,25 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   final _service = ChatService();
   final _message = TextEditingController();
+  late Stream<List<ChatMessage>> _messagesStream;
   bool _sending = false;
   String? _lastReadMessageId;
 
   @override
   void initState() {
     super.initState();
+    _messagesStream = _service.watchMessages(widget.conversationId);
     WidgetsBinding.instance.addPostFrameCallback((_) => _markRead());
+  }
+
+  @override
+  void didUpdateWidget(covariant ChatPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.conversationId != widget.conversationId) {
+      _messagesStream = _service.watchMessages(widget.conversationId);
+      _lastReadMessageId = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _markRead());
+    }
   }
 
   @override
@@ -66,7 +78,7 @@ class _ChatPageState extends State<ChatPage> {
         children: [
           Expanded(
             child: StreamBuilder<List<ChatMessage>>(
-              stream: _service.watchMessages(widget.conversationId),
+              stream: _messagesStream,
               builder: (context, snapshot) {
                 final messages = snapshot.data ?? [];
                 if (snapshot.connectionState == ConnectionState.waiting) {

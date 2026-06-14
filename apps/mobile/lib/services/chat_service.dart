@@ -2,17 +2,30 @@ import '../core/supabase_client.dart';
 import '../models/message.dart';
 
 class ChatService {
+  static List<ChatMessage> normalizeMessageRows(
+    Iterable<Map<String, dynamic>> rows,
+  ) {
+    final messagesById = <String, ChatMessage>{};
+    for (final row in rows) {
+      final message = ChatMessage.fromMap(Map<String, dynamic>.from(row));
+      messagesById[message.id] = message;
+    }
+
+    return messagesById.values.toList()
+      ..sort((left, right) {
+        final createdAtOrder = left.createdAt.compareTo(right.createdAt);
+        if (createdAtOrder != 0) return createdAtOrder;
+        return left.id.compareTo(right.id);
+      });
+  }
+
   Stream<List<ChatMessage>> watchMessages(String conversationId) {
     return supabase
         .from('messages')
         .stream(primaryKey: ['id'])
         .eq('conversation_id', conversationId)
         .order('created_at')
-        .map(
-          (rows) => rows
-              .map((row) => ChatMessage.fromMap(Map<String, dynamic>.from(row)))
-              .toList(),
-        );
+        .map(normalizeMessageRows);
   }
 
   Future<void> sendMessage({

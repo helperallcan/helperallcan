@@ -387,6 +387,8 @@ select is(
   'withdrawn'::public.offer_status,
   'helpers can withdraw pending offers through the RPC'
 );
+set local "app.bypass_task_guard" = 'off';
+set local "app.bypass_offer_guard" = 'off';
 reset role;
 select is(
   (select status from public.tasks where id = '00000000-0000-0000-0000-000000000202'),
@@ -418,6 +420,8 @@ select is(
   'cancelled'::public.task_status,
   'task owners can cancel active tasks through the RPC'
 );
+set local "app.bypass_task_guard" = 'off';
+set local "app.bypass_offer_guard" = 'off';
 reset role;
 
 set local role authenticated;
@@ -468,11 +472,15 @@ begin
   perform public.accept_task_offer('00000000-0000-0000-0000-000000000404');
 end
 $$;
+set local "app.bypass_task_guard" = 'off';
+set local "app.bypass_offer_guard" = 'off';
 select is(
   public.reopen_task_for_offers('00000000-0000-0000-0000-000000000204', 'Need another helper.'),
   'open'::public.task_status,
   'task owners can reopen assigned tasks for new offers'
 );
+set local "app.bypass_task_guard" = 'off';
+set local "app.bypass_offer_guard" = 'off';
 reset role;
 select ok(
   (select assigned_helper_id is null from public.tasks where id = '00000000-0000-0000-0000-000000000204'),

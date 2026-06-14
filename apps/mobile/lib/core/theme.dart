@@ -12,6 +12,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      fontFamily: 'NotoSansSC',
       scaffoldBackgroundColor: const Color(0xfff6f7f9),
       appBarTheme: const AppBarTheme(
         centerTitle: false,

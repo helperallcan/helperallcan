@@ -14,6 +14,7 @@ import 'features/profile/profile_page.dart';
 import 'features/tasks/create_task_page.dart';
 import 'features/tasks/task_detail_page.dart';
 import 'features/tasks/task_list_page.dart';
+import 'features/tasks/task_tracking_page.dart';
 import 'models/task.dart';
 
 class HelperApp extends StatelessWidget {
@@ -68,6 +69,12 @@ GoRouter _router() {
         path: '/tasks/new/:kind',
         builder: (context, state) => CreateTaskPage(
           taskKind: taskKindFromValue(state.pathParameters['kind']),
+        ),
+      ),
+      GoRoute(
+        path: '/tasks/:id/tracking',
+        builder: (context, state) => TaskTrackingPage(
+          taskId: state.pathParameters['id']!,
         ),
       ),
       GoRoute(

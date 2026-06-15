@@ -13,6 +13,7 @@ Migration 会把以下表加入 `supabase_realtime` publication：
 
 - `tasks`
 - `task_offers`
+- `task_locations`
 - `conversations`
 - `messages`
 - `notifications`
@@ -21,6 +22,7 @@ Migration 会把以下表加入 `supabase_realtime` publication：
 
 - `notifications` 保存站内通知和未读状态
 - `messages.read_at` 保存聊天消息是否已读
+- `task_locations` 保存任务双方最新共享位置，用于任务地图追踪
 - `push_tokens` 预留 Android / iOS / Web 推送 token，后续接入 FCM 或 APNs 时使用
 
 ## Storage

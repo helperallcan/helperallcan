@@ -3,7 +3,7 @@
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(43);
+select plan(47);
 
 create temporary table test_flags (
   name text primary key,
@@ -549,6 +549,91 @@ select is(
   (select count(*)::integer from public.conversations where task_id = '00000000-0000-0000-0000-000000000201'),
   1,
   'accepting an offer creates the task conversation'
+);
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000102';
+set local "request.jwt.claim.role" = 'authenticated';
+insert into public.task_locations (
+  id,
+  task_id,
+  user_id,
+  latitude,
+  longitude,
+  accuracy_meters,
+  label
+)
+values (
+  '00000000-0000-0000-0000-000000000701',
+  '00000000-0000-0000-0000-000000000201',
+  '00000000-0000-0000-0000-000000000102',
+  1.352100,
+  103.819800,
+  12.5,
+  'On the way'
+);
+select is(
+  (select count(*)::integer from public.task_locations where task_id = '00000000-0000-0000-0000-000000000201'),
+  1,
+  'assigned helpers can share task tracking location'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000101';
+set local "request.jwt.claim.role" = 'authenticated';
+select is(
+  (select count(*)::integer from public.task_locations where task_id = '00000000-0000-0000-0000-000000000201'),
+  1,
+  'task owners can view helper tracking location'
+);
+reset role;
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000103';
+set local "request.jwt.claim.role" = 'authenticated';
+select is(
+  (select count(*)::integer from public.task_locations where task_id = '00000000-0000-0000-0000-000000000201'),
+  0,
+  'outsiders cannot view task tracking location'
+);
+reset role;
+
+insert into test_flags (name) values ('outsider_cannot_share_task_location');
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000103';
+set local "request.jwt.claim.role" = 'authenticated';
+do $$
+begin
+  insert into public.task_locations (
+    task_id,
+    user_id,
+    latitude,
+    longitude
+  )
+  values (
+    '00000000-0000-0000-0000-000000000201',
+    '00000000-0000-0000-0000-000000000103',
+    1.300000,
+    103.800000
+  );
+
+  update test_flags
+  set passed = false,
+      detail = 'outsider tracking unexpectedly succeeded'
+  where name = 'outsider_cannot_share_task_location';
+exception
+  when others then
+    update test_flags
+    set passed = true,
+        detail = sqlerrm
+    where name = 'outsider_cannot_share_task_location';
+end
+$$;
+reset role;
+select ok(
+  (select passed from test_flags where name = 'outsider_cannot_share_task_location'),
+  'outsiders cannot share tracking for unrelated tasks'
 );
 
 insert into test_ids (name, id)

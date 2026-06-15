@@ -241,6 +241,8 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
           final userId = supabase.auth.currentUser?.id;
           final isOwner = task.creatorId == userId;
           final isAssignedHelper = task.assignedHelperId == userId;
+          final canTrackTask = task.status == TaskStatus.assigned ||
+              task.status == TaskStatus.inProgress;
           final myOffer = _offerForUser(data.offers, userId);
           final oppositeUserId = isOwner
               ? task.assignedHelperId
@@ -318,12 +320,23 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
                   onComplete: _confirmCompleted,
                   onCancel: () => _cancelTask(task),
                   onReopen: () => _reopenTask(task),
+                  onTracking: canTrackTask
+                      ? () => context.go('/tasks/${task.id}/tracking')
+                      : null,
                 ),
               ] else if (isAssignedHelper) ...[
                 PrimaryButton(
                   label: '进入聊天',
                   icon: Icons.chat_bubble_outline,
                   onPressed: _openChat,
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: canTrackTask
+                      ? () => context.go('/tasks/${task.id}/tracking')
+                      : null,
+                  icon: const Icon(Icons.map_outlined),
+                  label: const Text('地图追踪'),
                 ),
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
@@ -645,6 +658,7 @@ class _OwnerActions extends StatelessWidget {
     required this.onComplete,
     required this.onCancel,
     required this.onReopen,
+    required this.onTracking,
   });
 
   final Task task;
@@ -654,6 +668,7 @@ class _OwnerActions extends StatelessWidget {
   final VoidCallback onComplete;
   final VoidCallback onCancel;
   final VoidCallback onReopen;
+  final VoidCallback? onTracking;
 
   @override
   Widget build(BuildContext context) {
@@ -665,6 +680,12 @@ class _OwnerActions extends StatelessWidget {
             label: '进入聊天',
             icon: Icons.chat_bubble_outline,
             onPressed: onChat,
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: onTracking,
+            icon: const Icon(Icons.map_outlined),
+            label: const Text('地图追踪'),
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(

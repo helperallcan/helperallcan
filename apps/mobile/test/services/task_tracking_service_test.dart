@@ -53,6 +53,46 @@ void main() {
     );
   });
 
+  test('mapCenter uses active task locations and falls back safely', () {
+    final fallback = TaskTrackingService.mapCenter([]);
+    expect(fallback.latitude, TaskTrackingService.fallbackMapCenter.latitude);
+    expect(fallback.longitude, TaskTrackingService.fallbackMapCenter.longitude);
+
+    final center = TaskTrackingService.mapCenter([
+      TaskLocation.fromMap(
+        _row(
+          id: 'paused',
+          userId: 'paused-user',
+          latitude: 1,
+          longitude: 100,
+          updatedAt: '2026-06-15T08:00:00.000Z',
+          status: 'paused',
+        ),
+      ),
+      TaskLocation.fromMap(
+        _row(
+          id: 'active-owner',
+          userId: 'owner-id',
+          latitude: 3,
+          longitude: 101,
+          updatedAt: '2026-06-15T08:05:00.000Z',
+        ),
+      ),
+      TaskLocation.fromMap(
+        _row(
+          id: 'active-helper',
+          userId: 'helper-id',
+          latitude: 5,
+          longitude: 103,
+          updatedAt: '2026-06-15T08:10:00.000Z',
+        ),
+      ),
+    ]);
+
+    expect(center.latitude, 4);
+    expect(center.longitude, 102);
+  });
+
   test('navigationUri builds a Google Maps destination link', () {
     final uri = TaskTrackingService.navigationUri(
       TaskLocation.fromMap(
@@ -85,6 +125,7 @@ Map<String, dynamic> _row({
   required double latitude,
   required double longitude,
   required String updatedAt,
+  String status = 'active',
 }) {
   return {
     'id': id,
@@ -95,7 +136,7 @@ Map<String, dynamic> _row({
     'accuracy_meters': null,
     'heading_degrees': null,
     'speed_mps': null,
-    'sharing_status': 'active',
+    'sharing_status': status,
     'source': 'manual',
     'label': null,
     'updated_at': updatedAt,

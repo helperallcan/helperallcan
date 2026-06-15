@@ -2,6 +2,11 @@ import '../core/supabase_client.dart';
 import '../models/task_location.dart';
 
 class TaskTrackingService {
+  static const fallbackMapCenter = TaskMapPoint(
+    latitude: 3.139,
+    longitude: 101.6869,
+  );
+
   Stream<List<TaskLocation>> watchTaskLocations(String taskId) {
     return supabase
         .from('task_locations')
@@ -99,4 +104,32 @@ class TaskTrackingService {
     }
     return trimmed;
   }
+
+  static TaskMapPoint mapCenter(List<TaskLocation> locations) {
+    if (locations.isEmpty) return fallbackMapCenter;
+
+    final activeLocations =
+        locations.where((location) => location.isActive).toList();
+    final usefulLocations =
+        activeLocations.isEmpty ? locations : activeLocations;
+    final latitude = usefulLocations
+            .map((location) => location.latitude)
+            .reduce((left, right) => left + right) /
+        usefulLocations.length;
+    final longitude = usefulLocations
+            .map((location) => location.longitude)
+            .reduce((left, right) => left + right) /
+        usefulLocations.length;
+    return TaskMapPoint(latitude: latitude, longitude: longitude);
+  }
+}
+
+class TaskMapPoint {
+  const TaskMapPoint({
+    required this.latitude,
+    required this.longitude,
+  });
+
+  final double latitude;
+  final double longitude;
 }

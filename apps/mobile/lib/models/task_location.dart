@@ -52,6 +52,20 @@ class TaskLocation {
   String get coordinateLabel =>
       '${latitude.toStringAsFixed(5)}, ${longitude.toStringAsFixed(5)}';
 
+  String? get accuracyLabel {
+    final value = accuracyMeters;
+    if (value == null) return null;
+    return '约 ${value.toStringAsFixed(0)} 米';
+  }
+
+  String get sourceLabel {
+    return switch (source) {
+      'device' => '手机定位',
+      'system' => '系统定位',
+      _ => '手动坐标',
+    };
+  }
+
   factory TaskLocation.fromMap(Map<String, dynamic> map) {
     return TaskLocation(
       id: map['id'] as String,

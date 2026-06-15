@@ -1,12 +1,13 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/formatters.dart';
 import '../../core/supabase_client.dart';
 import '../../models/task.dart';
 import '../../models/task_location.dart';
+import '../../services/device_location_service.dart';
 import '../../services/task_service.dart';
 import '../../services/task_tracking_service.dart';
 import '../../widgets/app_shell.dart';
@@ -24,6 +25,7 @@ class TaskTrackingPage extends StatefulWidget {
 class _TaskTrackingPageState extends State<TaskTrackingPage> {
   final _taskService = TaskService();
   final _trackingService = TaskTrackingService();
+  final _deviceLocationService = DeviceLocationService();
   final _formKey = GlobalKey<FormState>();
   final _latitude = TextEditingController();
   final _longitude = TextEditingController();
@@ -31,6 +33,8 @@ class _TaskTrackingPageState extends State<TaskTrackingPage> {
   late Future<TaskDetailData> _taskFuture;
   TaskTrackingStatus _status = TaskTrackingStatus.active;
   bool _saving = false;
+  bool _locating = false;
+  String? _locationError;
 
   @override
   void initState() {
@@ -48,7 +52,10 @@ class _TaskTrackingPageState extends State<TaskTrackingPage> {
 
   Future<void> _share() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _locationError = null;
+    });
     try {
       await _trackingService.shareLocation(
         taskId: widget.taskId,
@@ -64,6 +71,53 @@ class _TaskTrackingPageState extends State<TaskTrackingPage> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  Future<void> _shareCurrentLocation() async {
+    setState(() {
+      _locating = true;
+      _locationError = null;
+    });
+
+    try {
+      final reading = await _deviceLocationService.getCurrentReading();
+      _latitude.text = reading.latitude.toStringAsFixed(6);
+      _longitude.text = reading.longitude.toStringAsFixed(6);
+      if (_label.text.trim().isEmpty) {
+        _label.text = '手机定位';
+      }
+
+      await _trackingService.shareLocation(
+        taskId: widget.taskId,
+        latitude: reading.latitude,
+        longitude: reading.longitude,
+        accuracyMeters: reading.accuracyMeters,
+        headingDegrees: reading.headingDegrees,
+        speedMps: reading.speedMps,
+        status: _status,
+        source: 'device',
+        label: _label.text,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('当前位置已共享')),
+      );
+    } on DeviceLocationException catch (error) {
+      _showLocationError(error.userMessage);
+    } catch (_) {
+      _showLocationError('暂时无法获取当前位置，请检查定位权限或网络后再试。');
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
+
+  void _showLocationError(String message) {
+    if (!mounted) return;
+    setState(() => _locationError = message);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   Future<void> _stopSharing() async {
@@ -139,9 +193,12 @@ class _TaskTrackingPageState extends State<TaskTrackingPage> {
                       label: _label,
                       status: _status,
                       saving: _saving,
+                      locating: _locating,
+                      locationError: _locationError,
                       myLocation: myLocation,
                       onStatusChanged: (status) =>
                           setState(() => _status = status),
+                      onUseDeviceLocation: _shareCurrentLocation,
                       onShare: _share,
                       onStopSharing: myLocation == null ? null : _stopSharing,
                     ),
@@ -242,54 +299,78 @@ class _TrackingMapPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final center = TaskTrackingService.mapCenter(locations);
+    final centerPoint = LatLng(center.latitude, center.longitude);
+    final mapKey = ValueKey(
+      '${locations.length}-${center.latitude.toStringAsFixed(5)}-${center.longitude.toStringAsFixed(5)}',
+    );
+
     return Container(
-      height: 300,
+      height: 340,
       decoration: BoxDecoration(
         color: const Color(0xffe7f0ed),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
-      child: Stack(
-        children: [
-          const _MapGrid(),
-          Positioned(
-            left: 16,
-            top: 16,
-            child: _MapBadge(
-              icon: Icons.place_outlined,
-              label: task.district?.isNotEmpty == true
-                  ? '${task.city ?? ''} ${task.district}'
-                  : task.locationText,
-            ),
-          ),
-          if (locations.isEmpty)
-            const Center(
-              child: Text(
-                '还没有共享位置',
-                style: TextStyle(fontWeight: FontWeight.w800),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Stack(
+          children: [
+            FlutterMap(
+              key: mapKey,
+              options: MapOptions(
+                initialCenter: centerPoint,
+                initialZoom: locations.isEmpty ? 12 : 14,
+                minZoom: 3,
+                maxZoom: 18,
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                ),
               ),
-            )
-          else
-            LayoutBuilder(
-              builder: (context, constraints) {
-                return Stack(
-                  children: _buildPins(context, constraints.biggest),
-                );
-              },
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.helper.mobile',
+                ),
+                if (locations.isNotEmpty)
+                  MarkerLayer(markers: _buildMarkers(context)),
+              ],
             ),
-        ],
+            Positioned(
+              left: 12,
+              top: 12,
+              right: 12,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: _MapBadge(
+                  icon: Icons.place_outlined,
+                  label: _taskLocationLabel(task),
+                ),
+              ),
+            ),
+            if (locations.isEmpty)
+              const Center(
+                child: _EmptyMapNotice(),
+              ),
+            const Positioned(
+              right: 10,
+              bottom: 10,
+              child: _MapAttribution(),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  List<Widget> _buildPins(BuildContext context, Size size) {
-    final bounds = _LocationBounds(locations);
+  List<Marker> _buildMarkers(BuildContext context) {
     return locations.map((location) {
-      final point = bounds.position(location, size);
       final mine = location.userId == currentUserId;
-      return Positioned(
-        left: point.dx,
-        top: point.dy,
+      return Marker(
+        point: LatLng(location.latitude, location.longitude),
+        width: 96,
+        height: 96,
+        alignment: Alignment.bottomCenter,
         child: _MapPin(
           label: mine ? '我' : '对方',
           location: location,
@@ -299,74 +380,6 @@ class _TrackingMapPanel extends StatelessWidget {
         ),
       );
     }).toList();
-  }
-}
-
-class _LocationBounds {
-  _LocationBounds(this.locations)
-      : minLat = locations.map((item) => item.latitude).reduce(math.min),
-        maxLat = locations.map((item) => item.latitude).reduce(math.max),
-        minLng = locations.map((item) => item.longitude).reduce(math.min),
-        maxLng = locations.map((item) => item.longitude).reduce(math.max);
-
-  final List<TaskLocation> locations;
-  final double minLat;
-  final double maxLat;
-  final double minLng;
-  final double maxLng;
-
-  Offset position(TaskLocation location, Size size) {
-    final isFlatLatitude = (maxLat - minLat).abs() < 0.0001;
-    final isFlatLongitude = (maxLng - minLng).abs() < 0.0001;
-    final latRange = isFlatLatitude ? 1.0 : maxLat - minLat;
-    final lngRange = isFlatLongitude ? 1.0 : maxLng - minLng;
-    final x = isFlatLongitude
-        ? 0.5
-        : ((location.longitude - minLng) / lngRange).clamp(0.0, 1.0);
-    final y = isFlatLatitude
-        ? 0.5
-        : (1 - ((location.latitude - minLat) / latRange)).clamp(0.0, 1.0);
-    final availableWidth = math.max(1.0, size.width - 96);
-    final availableHeight = math.max(1.0, size.height - 128);
-    return Offset(24 + x * availableWidth, 72 + y * availableHeight);
-  }
-}
-
-class _MapGrid extends StatelessWidget {
-  const _MapGrid();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _MapGridPainter(
-        color: Theme.of(context).colorScheme.primary.withAlpha(36),
-      ),
-      child: const SizedBox.expand(),
-    );
-  }
-}
-
-class _MapGridPainter extends CustomPainter {
-  const _MapGridPainter({required this.color});
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1;
-    for (var x = 0.0; x < size.width; x += 54) {
-      canvas.drawLine(Offset(x, 0), Offset(x + 80, size.height), paint);
-    }
-    for (var y = 28.0; y < size.height; y += 52) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y - 30), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _MapGridPainter oldDelegate) {
-    return oldDelegate.color != color;
   }
 }
 
@@ -406,7 +419,7 @@ class _MapPin extends StatelessWidget {
             ),
           ),
         ),
-        Icon(Icons.location_on, color: color, size: 42),
+        Icon(Icons.location_on, color: color, size: 44),
         Text(
           location.status.label,
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
@@ -436,8 +449,7 @@ class _MapBadge extends StatelessWidget {
           children: [
             Icon(icon, size: 18),
             const SizedBox(width: 6),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 260),
+            Flexible(
               child: Text(
                 label,
                 overflow: TextOverflow.ellipsis,
@@ -445,6 +457,48 @@ class _MapBadge extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyMapNotice extends StatelessWidget {
+  const _EmptyMapNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(230),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Text(
+          '等待双方共享位置',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ),
+    );
+  }
+}
+
+class _MapAttribution extends StatelessWidget {
+  const _MapAttribution();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(220),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Text(
+          '© OpenStreetMap',
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
         ),
       ),
     );
@@ -459,8 +513,11 @@ class _ShareLocationPanel extends StatelessWidget {
     required this.label,
     required this.status,
     required this.saving,
+    required this.locating,
+    required this.locationError,
     required this.myLocation,
     required this.onStatusChanged,
+    required this.onUseDeviceLocation,
     required this.onShare,
     required this.onStopSharing,
   });
@@ -471,10 +528,15 @@ class _ShareLocationPanel extends StatelessWidget {
   final TextEditingController label;
   final TaskTrackingStatus status;
   final bool saving;
+  final bool locating;
+  final String? locationError;
   final TaskLocation? myLocation;
   final ValueChanged<TaskTrackingStatus> onStatusChanged;
+  final VoidCallback onUseDeviceLocation;
   final VoidCallback onShare;
   final VoidCallback? onStopSharing;
+
+  bool get _isBusy => saving || locating;
 
   @override
   Widget build(BuildContext context) {
@@ -501,6 +563,12 @@ class _ShareLocationPanel extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 10),
+              const _LocationModeHint(),
+              if (locationError != null) ...[
+                const SizedBox(height: 10),
+                _LocationErrorBanner(message: locationError!),
+              ],
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -559,19 +627,25 @@ class _ShareLocationPanel extends StatelessWidget {
                     .toList(),
                 selected: {status},
                 onSelectionChanged:
-                    saving ? null : (value) => onStatusChanged(value.first),
+                    _isBusy ? null : (value) => onStatusChanged(value.first),
               ),
               const SizedBox(height: 12),
               PrimaryButton(
-                label: myLocation == null ? '共享位置' : '更新位置',
-                icon: Icons.near_me_outlined,
-                isLoading: saving,
-                onPressed: onShare,
+                label: myLocation == null ? '使用手机定位共享' : '用手机定位更新',
+                icon: Icons.my_location_outlined,
+                isLoading: locating,
+                onPressed: saving ? null : onUseDeviceLocation,
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: _isBusy ? null : onShare,
+                icon: const Icon(Icons.edit_location_alt_outlined),
+                label: Text(myLocation == null ? '保存手动坐标' : '更新手动坐标'),
               ),
               if (myLocation != null) ...[
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
-                  onPressed: onStopSharing,
+                  onPressed: _isBusy ? null : onStopSharing,
                   icon: const Icon(Icons.location_disabled_outlined),
                   label: const Text('停止共享'),
                 ),
@@ -584,8 +658,74 @@ class _ShareLocationPanel extends StatelessWidget {
   }
 }
 
-String? _coordinateError(String? value,
-    {required double min, required double max}) {
+class _LocationModeHint extends StatelessWidget {
+  const _LocationModeHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer.withAlpha(120),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.gps_fixed_outlined,
+            size: 18,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text('手机会请求定位权限；没有权限时也可以手动填写坐标。'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LocationErrorBanner extends StatelessWidget {
+  const _LocationErrorBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.location_disabled_outlined,
+            size: 18,
+            color: Theme.of(context).colorScheme.onErrorContainer,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String? _coordinateError(
+  String? value, {
+  required double min,
+  required double max,
+}) {
   final text = value?.trim() ?? '';
   final number = double.tryParse(text);
   if (number == null) return '请输入有效坐标';
@@ -669,16 +809,7 @@ class _LocationList extends StatelessWidget {
                     ),
                   ),
                   title: Text(_participantLabel(location.userId)),
-                  subtitle: Text(
-                    [
-                      location.coordinateLabel,
-                      location.label,
-                      formatDate(location.updatedAt),
-                    ]
-                        .whereType<String>()
-                        .where((item) => item.isNotEmpty)
-                        .join(' · '),
-                  ),
+                  subtitle: Text(_locationSubtitle(location)),
                   trailing: location.userId == currentUserId
                       ? Chip(
                           label: Text(location.status.label),
@@ -699,10 +830,31 @@ class _LocationList extends StatelessWidget {
     );
   }
 
+  String _locationSubtitle(TaskLocation location) {
+    return [
+      location.coordinateLabel,
+      location.sourceLabel,
+      location.accuracyLabel,
+      location.label,
+      formatDate(location.updatedAt),
+    ].whereType<String>().where((item) => item.isNotEmpty).join(' · ');
+  }
+
   String _participantLabel(String userId) {
     if (userId == currentUserId) return '我';
     if (userId == creatorId) return '发布者';
     if (userId == assignedHelperId) return '帮手';
     return '任务成员';
   }
+}
+
+String _taskLocationLabel(Task task) {
+  final city = task.city?.trim();
+  final district = task.district?.trim();
+  final parts = [
+    if (city != null && city.isNotEmpty) city,
+    if (district != null && district.isNotEmpty) district,
+  ];
+  if (parts.isNotEmpty) return parts.join(' ');
+  return task.locationText;
 }

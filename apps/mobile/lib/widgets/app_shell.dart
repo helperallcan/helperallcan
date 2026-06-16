@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../services/notification_service.dart';
+import 'unread_icon_badge.dart';
+
 class AppShellBreakpoints {
   static const desktopWidth = 900.0;
 
@@ -13,11 +16,13 @@ class AppShell extends StatelessWidget {
     required this.title,
     required this.child,
     this.actions,
+    this.showNotificationAction = true,
   });
 
   final String title;
   final Widget child;
   final List<Widget>? actions;
+  final bool showNotificationAction;
 
   @override
   Widget build(BuildContext context) {
@@ -25,12 +30,16 @@ class AppShell extends StatelessWidget {
       builder: (context, constraints) {
         final location = GoRouterState.of(context).matchedLocation;
         final index = _indexForLocation(location);
+        final effectiveActions = <Widget>[
+          if (showNotificationAction) const _AppShellNotificationButton(),
+          ...?actions,
+        ];
 
         if (AppShellBreakpoints.isDesktop(constraints.maxWidth)) {
           return _DesktopShell(
             title: title,
             selectedIndex: index,
-            actions: actions,
+            actions: effectiveActions,
             child: child,
           );
         }
@@ -38,7 +47,7 @@ class AppShell extends StatelessWidget {
         return _MobileShell(
           title: title,
           selectedIndex: index,
-          actions: actions,
+          actions: effectiveActions,
           child: child,
         );
       },
@@ -50,6 +59,36 @@ class AppShell extends StatelessWidget {
     if (location.startsWith('/helper-profile')) return 2;
     if (location.startsWith('/profile')) return 3;
     return 0;
+  }
+}
+
+class _AppShellNotificationButton extends StatelessWidget {
+  const _AppShellNotificationButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<UnreadSummary>(
+      stream: NotificationService().watchUnreadSummary(),
+      builder: (context, snapshot) {
+        final summary = snapshot.data ??
+            const UnreadSummary(
+              notifications: 0,
+              chats: 0,
+            );
+        final count = summary.total;
+
+        return IconButton(
+          tooltip: summary.tooltipLabel,
+          onPressed: () => context.go('/notifications'),
+          icon: UnreadIconBadge(
+            icon: count > 0
+                ? Icons.notifications_active_outlined
+                : Icons.notifications_none_outlined,
+            count: count,
+          ),
+        );
+      },
+    );
   }
 }
 

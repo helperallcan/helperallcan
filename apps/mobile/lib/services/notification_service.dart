@@ -23,6 +23,23 @@ class AppNotification {
 
   bool get isRead => readAt != null;
   bool get isChat => notificationType == 'chat' || conversationId != null;
+  bool get isOffer => notificationType == 'offer';
+  bool get isTracking {
+    final explicitRoutePath = _safeRoutePath(data['route_path']);
+    return data['event'] == 'task_location_update' ||
+        (explicitRoutePath != null && explicitRoutePath.endsWith('/tracking'));
+  }
+
+  bool get isTask =>
+      notificationType == 'task' || isOffer || isTracking || taskId != null;
+
+  String get typeLabel {
+    if (isChat) return '聊天';
+    if (isTracking) return '位置';
+    if (isOffer) return '报价';
+    if (isTask) return '任务';
+    return '系统';
+  }
 
   String? get taskId => _nonEmptyString(data['task_id']);
   String? get conversationId => _nonEmptyString(data['conversation_id']);
@@ -106,6 +123,16 @@ class UnreadSummary {
 
   int get total => notifications + chats;
   bool get hasUnread => total > 0;
+
+  String get tooltipLabel {
+    if (!hasUnread) return '通知';
+
+    final parts = <String>[
+      if (notifications > 0) '$notifications 条通知',
+      if (chats > 0) '$chats 条聊天',
+    ];
+    return '通知，${parts.join('，')}未读';
+  }
 }
 
 class NotificationService {

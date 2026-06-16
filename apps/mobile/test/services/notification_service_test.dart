@@ -21,6 +21,7 @@ void main() {
       expect(notification.routePath, '/chat/conversation-id');
       expect(notification.isRead, isFalse);
       expect(notification.isChat, isTrue);
+      expect(notification.typeLabel, '聊天');
     });
 
     test('routes task notifications to the task detail page', () {
@@ -35,6 +36,7 @@ void main() {
 
       expect(notification.routePath, '/tasks/task-id');
       expect(notification.isRead, isTrue);
+      expect(notification.typeLabel, '任务');
     });
 
     test('uses safe explicit route paths for tracking notifications', () {
@@ -50,6 +52,27 @@ void main() {
       });
 
       expect(notification.routePath, '/tasks/task-id/tracking');
+      expect(notification.typeLabel, '位置');
+    });
+
+    test('labels offer and system notifications for display', () {
+      final offerNotification = AppNotification.fromMap({
+        'id': 'offer-notification',
+        'notification_type': 'offer',
+        'title': '收到新的帮手报价',
+        'body': '有人报价',
+        'created_at': '2026-05-25T08:00:00.000Z',
+      });
+      final systemNotification = AppNotification.fromMap({
+        'id': 'system-notification',
+        'notification_type': 'system',
+        'title': '系统通知',
+        'body': '资料已更新',
+        'created_at': '2026-05-25T08:00:00.000Z',
+      });
+
+      expect(offerNotification.typeLabel, '报价');
+      expect(systemNotification.typeLabel, '系统');
     });
 
     test('ignores unsafe explicit route paths and falls back safely', () {
@@ -144,6 +167,21 @@ void main() {
       expect(
         NotificationService.unreadMessageCountFromRows(rows, 'owner-id'),
         1,
+      );
+    });
+
+    test('describes unread summary for the app shell badge', () {
+      expect(
+        const UnreadSummary(notifications: 0, chats: 0).tooltipLabel,
+        '通知',
+      );
+      expect(
+        const UnreadSummary(notifications: 2, chats: 1).tooltipLabel,
+        '通知，2 条通知，1 条聊天未读',
+      );
+      expect(
+        const UnreadSummary(notifications: 0, chats: 3).tooltipLabel,
+        '通知，3 条聊天未读',
       );
     });
   });

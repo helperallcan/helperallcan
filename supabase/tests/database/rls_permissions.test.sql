@@ -3,7 +3,7 @@
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(47);
+select plan(48);
 
 create temporary table test_flags (
   name text primary key,
@@ -586,6 +586,17 @@ select is(
   (select count(*)::integer from public.task_locations where task_id = '00000000-0000-0000-0000-000000000201'),
   1,
   'task owners can view helper tracking location'
+);
+select is(
+  (
+    select count(*)::integer
+    from public.notifications
+    where user_id = '00000000-0000-0000-0000-000000000101'
+      and data->>'event' = 'task_location_update'
+      and data->>'route_path' = '/tasks/00000000-0000-0000-0000-000000000201/tracking'
+  ),
+  1,
+  'task owners receive task tracking notifications'
 );
 reset role;
 

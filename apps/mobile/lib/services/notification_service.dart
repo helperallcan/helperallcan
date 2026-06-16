@@ -28,6 +28,11 @@ class AppNotification {
   String? get conversationId => _nonEmptyString(data['conversation_id']);
 
   String? get routePath {
+    final explicitRoutePath = _safeRoutePath(data['route_path']);
+    if (explicitRoutePath != null) {
+      return explicitRoutePath;
+    }
+
     final chatId = conversationId;
     if (chatId != null) {
       return '/chat/$chatId';
@@ -67,6 +72,26 @@ class AppNotification {
     }
     final trimmed = value.trim();
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  static String? _safeRoutePath(Object? value) {
+    final routePath = _nonEmptyString(value);
+    if (routePath == null ||
+        !routePath.startsWith('/') ||
+        routePath.startsWith('//')) {
+      return null;
+    }
+
+    final allowedPrefixes = [
+      '/tasks/',
+      '/chat/',
+      '/notifications',
+      '/profile',
+      '/helper-profile',
+    ];
+    final isAllowed =
+        allowedPrefixes.any((prefix) => routePath.startsWith(prefix));
+    return isAllowed ? routePath : null;
   }
 }
 

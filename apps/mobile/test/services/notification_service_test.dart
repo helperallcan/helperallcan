@@ -37,6 +37,36 @@ void main() {
       expect(notification.isRead, isTrue);
     });
 
+    test('uses safe explicit route paths for tracking notifications', () {
+      final notification = AppNotification.fromMap({
+        'id': 'notification-id',
+        'title': '任务位置已更新',
+        'body': '对方共享了当前位置',
+        'created_at': '2026-05-25T08:00:00.000Z',
+        'data': {
+          'task_id': 'task-id',
+          'route_path': '/tasks/task-id/tracking',
+        },
+      });
+
+      expect(notification.routePath, '/tasks/task-id/tracking');
+    });
+
+    test('ignores unsafe explicit route paths and falls back safely', () {
+      final notification = AppNotification.fromMap({
+        'id': 'notification-id',
+        'title': '任务位置已更新',
+        'body': '对方共享了当前位置',
+        'created_at': '2026-05-25T08:00:00.000Z',
+        'data': {
+          'task_id': 'task-id',
+          'route_path': 'https://example.com/phishing',
+        },
+      });
+
+      expect(notification.routePath, '/tasks/task-id');
+    });
+
     test('ignores missing or invalid notification data', () {
       final notification = AppNotification.fromMap({
         'id': 'notification-id',

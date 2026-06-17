@@ -17,11 +17,25 @@ export async function requireAdmin(): Promise<AdminProfile> {
 
   if (!user) redirect('/login');
 
-  const { data: profile } = await adminSupabase
-    .from('profiles')
-    .select('id, display_name, role')
-    .eq('id', user.id)
-    .single();
+  let profile: AdminProfile | null = null;
+  let profileError: { message: string } | null = null;
+
+  try {
+    const result = await adminSupabase
+      .from('profiles')
+      .select('id, display_name, role')
+      .eq('id', user.id)
+      .single();
+
+    profile = result.data;
+    profileError = result.error;
+  } catch {
+    redirect('/login?error=config');
+  }
+
+  if (profileError) {
+    redirect('/login?error=config');
+  }
 
   if (!profile || profile.role !== 'admin') {
     redirect('/login?error=admin');

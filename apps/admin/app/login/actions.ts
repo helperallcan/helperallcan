@@ -2,15 +2,20 @@
 
 import { redirect } from 'next/navigation';
 
+import { getAuthLoginErrorMessage } from '@/lib/auth-errors';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export async function loginAction(_prevState: { error?: string }, formData: FormData) {
-  const email = String(formData.get('email') ?? '');
+  const email = String(formData.get('email') ?? '').trim();
   const password = String(formData.get('password') ?? '');
   const supabase = await createServerSupabaseClient();
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: error.message };
+  try {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { error: getAuthLoginErrorMessage(error) };
+  } catch (error) {
+    return { error: getAuthLoginErrorMessage(error) };
+  }
 
   redirect('/dashboard');
 }

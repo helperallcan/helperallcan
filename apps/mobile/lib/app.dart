@@ -5,6 +5,7 @@ import 'core/env.dart';
 import 'core/router_refresh.dart';
 import 'core/supabase_client.dart';
 import 'core/theme.dart';
+import 'features/chat/chat_list_page.dart';
 import 'features/auth/login_page.dart';
 import 'features/chat/chat_page.dart';
 import 'features/helper/helper_profile_page.dart';
@@ -57,6 +58,8 @@ GoRouter _router() {
         path: '/notifications',
         builder: (context, state) => const NotificationsPage(),
       ),
+      GoRoute(
+          path: '/chats', builder: (context, state) => const ChatListPage()),
       GoRoute(
           path: '/profile', builder: (context, state) => const ProfilePage()),
       GoRoute(

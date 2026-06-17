@@ -56,8 +56,11 @@ class AppShell extends StatelessWidget {
 
   int _indexForLocation(String location) {
     if (location.startsWith('/tasks')) return 1;
-    if (location.startsWith('/helper-profile')) return 2;
-    if (location.startsWith('/profile')) return 3;
+    if (location.startsWith('/chat') || location.startsWith('/chats')) {
+      return 2;
+    }
+    if (location.startsWith('/helper-profile')) return 3;
+    if (location.startsWith('/profile')) return 4;
     return 0;
   }
 }
@@ -128,10 +131,34 @@ class _MobileShell extends StatelessWidget {
           NavigationDestination(
               icon: Icon(Icons.list_alt_outlined), label: '任务'),
           NavigationDestination(
+            icon: _UnreadChatIcon(icon: Icons.chat_bubble_outline),
+            selectedIcon: _UnreadChatIcon(icon: Icons.chat_bubble),
+            label: '聊天',
+          ),
+          NavigationDestination(
               icon: Icon(Icons.handyman_outlined), label: '帮手'),
           NavigationDestination(icon: Icon(Icons.person_outline), label: '我的'),
         ],
       ),
+    );
+  }
+}
+
+class _UnreadChatIcon extends StatelessWidget {
+  const _UnreadChatIcon({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<int>(
+      stream: NotificationService().watchUnreadChatCount(),
+      builder: (context, snapshot) {
+        return UnreadIconBadge(
+          icon: icon,
+          count: snapshot.data ?? 0,
+        );
+      },
     );
   }
 }
@@ -237,15 +264,16 @@ class _DesktopSidebar extends StatelessWidget {
               selectedIcon: Icons.list_alt,
               label: '任务大厅',
             ),
+            _UnreadChatNavItem(selectedIndex: selectedIndex),
             _NavItem(
-              index: 2,
+              index: 3,
               selectedIndex: selectedIndex,
               icon: Icons.handyman_outlined,
               selectedIcon: Icons.handyman,
               label: '做帮手',
             ),
             _NavItem(
-              index: 3,
+              index: 4,
               selectedIndex: selectedIndex,
               icon: Icons.person_outline,
               selectedIcon: Icons.person,
@@ -264,6 +292,29 @@ class _DesktopSidebar extends StatelessWidget {
   }
 }
 
+class _UnreadChatNavItem extends StatelessWidget {
+  const _UnreadChatNavItem({required this.selectedIndex});
+
+  final int selectedIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<int>(
+      stream: NotificationService().watchUnreadChatCount(),
+      builder: (context, snapshot) {
+        return _NavItem(
+          index: 2,
+          selectedIndex: selectedIndex,
+          icon: Icons.chat_bubble_outline,
+          selectedIcon: Icons.chat_bubble,
+          label: '聊天中心',
+          badgeCount: snapshot.data ?? 0,
+        );
+      },
+    );
+  }
+}
+
 class _NavItem extends StatelessWidget {
   const _NavItem({
     required this.index,
@@ -271,6 +322,7 @@ class _NavItem extends StatelessWidget {
     required this.icon,
     required this.selectedIcon,
     required this.label,
+    this.badgeCount = 0,
   });
 
   final int index;
@@ -278,11 +330,14 @@ class _NavItem extends StatelessWidget {
   final IconData icon;
   final IconData selectedIcon;
   final String label;
+  final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
     final selected = index == selectedIndex;
     final colorScheme = Theme.of(context).colorScheme;
+    final iconColor =
+        selected ? colorScheme.primary : colorScheme.onSurfaceVariant;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -301,18 +356,22 @@ class _NavItem extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(
-                selected ? selectedIcon : icon,
-                color: selected
-                    ? colorScheme.primary
-                    : colorScheme.onSurfaceVariant,
+              IconTheme(
+                data: IconThemeData(color: iconColor),
+                child: UnreadIconBadge(
+                  icon: selected ? selectedIcon : icon,
+                  count: badgeCount,
+                ),
               ),
               const SizedBox(width: 12),
-              Text(
-                label,
-                style: TextStyle(
-                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                  color: selected ? colorScheme.primary : colorScheme.onSurface,
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                    color:
+                        selected ? colorScheme.primary : colorScheme.onSurface,
+                  ),
                 ),
               ),
             ],
@@ -366,9 +425,12 @@ void _goToIndex(BuildContext context, int index) {
       context.go('/tasks');
       break;
     case 2:
-      context.go('/helper-profile');
+      context.go('/chats');
       break;
     case 3:
+      context.go('/helper-profile');
+      break;
+    case 4:
       context.go('/profile');
       break;
   }

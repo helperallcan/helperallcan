@@ -49,11 +49,43 @@ enum TaskStatus {
   bool get canConfirmCompletion =>
       this == TaskStatus.assigned || this == TaskStatus.inProgress;
 
+  bool get isWaitingForHelper =>
+      this == TaskStatus.open || this == TaskStatus.offered;
+
+  bool get isActiveWork =>
+      this == TaskStatus.assigned || this == TaskStatus.inProgress;
+
   bool get isClosed =>
       this == TaskStatus.completed ||
       this == TaskStatus.cancelled ||
       this == TaskStatus.rejected ||
       this == TaskStatus.hidden;
+
+  int get lifecycleStep {
+    return switch (this) {
+      TaskStatus.draft => 0,
+      TaskStatus.open => 1,
+      TaskStatus.offered => 2,
+      TaskStatus.assigned => 3,
+      TaskStatus.inProgress => 4,
+      TaskStatus.completed => 5,
+      TaskStatus.cancelled || TaskStatus.rejected || TaskStatus.hidden => -1,
+    };
+  }
+
+  String get lifecycleHint {
+    return switch (this) {
+      TaskStatus.draft => '草稿任务还没有公开发布。',
+      TaskStatus.open => '任务正在等待帮手报价。',
+      TaskStatus.offered => '已有帮手报价，发布者可以选择合适的人。',
+      TaskStatus.assigned => '已选择帮手，可以开始沟通和执行任务。',
+      TaskStatus.inProgress => '任务正在进行中，帮手完成后可提交证明。',
+      TaskStatus.completed => '任务已完成，双方可以互相评价。',
+      TaskStatus.cancelled => '任务已取消，相关流程已关闭。',
+      TaskStatus.rejected => '任务未通过审核。',
+      TaskStatus.hidden => '任务已隐藏。',
+    };
+  }
 
   static TaskStatus fromValue(String? value) {
     return TaskStatus.values.firstWhere(

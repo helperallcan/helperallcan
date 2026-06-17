@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/formatters.dart';
 import '../../core/supabase_client.dart';
@@ -243,6 +244,8 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
           final isAssignedHelper = task.assignedHelperId == userId;
           final canTrackTask = task.status == TaskStatus.assigned ||
               task.status == TaskStatus.inProgress;
+          final hasCompletionProof =
+              task.completionNote != null || task.completionProofUrl != null;
           final myOffer = _offerForUser(data.offers, userId);
           final oppositeUserId = isOwner
               ? task.assignedHelperId
@@ -287,6 +290,17 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
               const SizedBox(height: 16),
               _InfoCard(task: task),
               const SizedBox(height: 16),
+              _TaskFlowCard(
+                task: task,
+                offerCount: data.offers
+                    .where((offer) => offer.status == OfferStatus.pending)
+                    .length,
+                hasCompletionProof: hasCompletionProof,
+                hasReviewed: hasReviewed,
+                isOwner: isOwner,
+                isAssignedHelper: isAssignedHelper,
+              ),
+              const SizedBox(height: 16),
               if (task.images.isNotEmpty) _ImageStrip(task: task),
               const SizedBox(height: 16),
               Text(
@@ -299,6 +313,8 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
                 _CompletionStatusCard(
                   task: task,
                   uploadService: _uploadService,
+                  canConfirm: isOwner && task.status.canConfirmCompletion,
+                  onConfirm: _confirmCompleted,
                 ),
               ],
               if (data.reviews.isNotEmpty) ...[
@@ -344,7 +360,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
                       ? null
                       : () => _submitCompletionProof(task),
                   icon: const Icon(Icons.task_alt_outlined),
-                  label: const Text('上传完成证明'),
+                  label: Text(hasCompletionProof ? '更新完成证明' : '上传完成证明'),
                 ),
               ] else ...[
                 if (myOffer != null)
@@ -486,14 +502,213 @@ class _ImageStrip extends StatelessWidget {
   }
 }
 
+class _TaskFlowCard extends StatelessWidget {
+  const _TaskFlowCard({
+    required this.task,
+    required this.offerCount,
+    required this.hasCompletionProof,
+    required this.hasReviewed,
+    required this.isOwner,
+    required this.isAssignedHelper,
+  });
+
+  final Task task;
+  final int offerCount;
+  final bool hasCompletionProof;
+  final bool hasReviewed;
+  final bool isOwner;
+  final bool isAssignedHelper;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final steps = [
+      _FlowStep(
+        label: '发布',
+        icon: Icons.add_task_outlined,
+        isDone: task.status.lifecycleStep >= 1,
+      ),
+      _FlowStep(
+        label: '报价',
+        icon: Icons.local_offer_outlined,
+        isDone: task.status.lifecycleStep >= 2 || offerCount > 0,
+        count: offerCount,
+      ),
+      _FlowStep(
+        label: '接单',
+        icon: Icons.handshake_outlined,
+        isDone: task.assignedHelperId != null || task.status.lifecycleStep >= 3,
+      ),
+      _FlowStep(
+        label: '证明',
+        icon: Icons.task_alt_outlined,
+        isDone: hasCompletionProof || task.status == TaskStatus.completed,
+      ),
+      _FlowStep(
+        label: '完成',
+        icon: Icons.verified_outlined,
+        isDone: task.status == TaskStatus.completed,
+      ),
+      _FlowStep(
+        label: '评价',
+        icon: Icons.star_outline,
+        isDone: hasReviewed,
+      ),
+    ];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.route_outlined, color: colorScheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '任务流程',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                ),
+                Chip(
+                  label: Text(task.status.label),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              _nextActionLabel,
+              style: TextStyle(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 14),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 560;
+                return Wrap(
+                  spacing: compact ? 8 : 12,
+                  runSpacing: 10,
+                  children: steps
+                      .map(
+                        (step) => SizedBox(
+                          width: compact
+                              ? (constraints.maxWidth - 8) / 2
+                              : (constraints.maxWidth - 24) / 3,
+                          child: _FlowStepTile(step: step),
+                        ),
+                      )
+                      .toList(),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String get _nextActionLabel {
+    if (task.status.isClosed && task.status != TaskStatus.completed) {
+      return task.status.lifecycleHint;
+    }
+    if (task.status.isWaitingForHelper) {
+      if (isOwner) {
+        return offerCount > 0 ? '下一步：选择合适的帮手。' : '下一步：等待帮手报价。';
+      }
+      return '下一步：帮手可以提交报价或接单说明。';
+    }
+    if (task.status.isActiveWork) {
+      if (isOwner) {
+        return hasCompletionProof ? '下一步：查看完成证明并确认完成。' : '下一步：等待帮手提交完成证明。';
+      }
+      if (isAssignedHelper) {
+        return hasCompletionProof ? '下一步：等待发布者确认完成。' : '下一步：完成任务后上传证明。';
+      }
+      return task.status.lifecycleHint;
+    }
+    if (task.status == TaskStatus.completed) {
+      return hasReviewed ? '你已经完成评价。' : '下一步：给对方一个评价。';
+    }
+    return task.status.lifecycleHint;
+  }
+}
+
+class _FlowStep {
+  const _FlowStep({
+    required this.label,
+    required this.icon,
+    required this.isDone,
+    this.count,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool isDone;
+  final int? count;
+}
+
+class _FlowStepTile extends StatelessWidget {
+  const _FlowStepTile({required this.step});
+
+  final _FlowStep step;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final color =
+        step.isDone ? colorScheme.primary : colorScheme.onSurfaceVariant;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: step.isDone
+            ? colorScheme.primary.withAlpha(20)
+            : colorScheme.surfaceContainerHighest.withAlpha(120),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(step.isDone ? Icons.check_circle : step.icon,
+              size: 18, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              step.count != null && step.count! > 0
+                  ? '${step.label} ${step.count}'
+                  : step.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CompletionStatusCard extends StatelessWidget {
   const _CompletionStatusCard({
     required this.task,
     required this.uploadService,
+    required this.canConfirm,
+    required this.onConfirm,
   });
 
   final Task task;
   final UploadService uploadService;
+  final bool canConfirm;
+  final VoidCallback onConfirm;
 
   @override
   Widget build(BuildContext context) {
@@ -526,39 +741,109 @@ class _CompletionStatusCard extends StatelessWidget {
             if (proofPath != null && proofPath.isNotEmpty) ...[
               const SizedBox(height: 12),
               if (UploadService.isImageProofPath(proofPath))
-                FutureBuilder<String>(
-                  future:
-                      uploadService.createCompletionProofSignedUrl(proofPath),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return const SizedBox(
-                        height: 120,
-                        child: Center(child: CircularProgressIndicator()),
-                      );
-                    }
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        snapshot.data!,
-                        height: 180,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    );
-                  },
+                _SignedProofPreview(
+                  proofPath: proofPath,
+                  uploadService: uploadService,
                 )
               else
-                const Row(
-                  children: [
-                    Icon(Icons.attach_file_outlined),
-                    SizedBox(width: 8),
-                    Text('证明文件已上传'),
-                  ],
+                _SignedProofFileButton(
+                  proofPath: proofPath,
+                  uploadService: uploadService,
                 ),
+            ],
+            if (canConfirm) ...[
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: onConfirm,
+                icon: const Icon(Icons.verified_outlined),
+                label: const Text('确认任务完成'),
+              ),
             ],
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SignedProofPreview extends StatelessWidget {
+  const _SignedProofPreview({
+    required this.proofPath,
+    required this.uploadService,
+  });
+
+  final String proofPath;
+  final UploadService uploadService;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String>(
+      future: uploadService.createCompletionProofSignedUrl(proofPath),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox(
+            height: 120,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final url = snapshot.data!;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                url,
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => _launchProofUrl(context, url),
+              icon: const Icon(Icons.open_in_new_outlined),
+              label: const Text('打开证明图片'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _SignedProofFileButton extends StatelessWidget {
+  const _SignedProofFileButton({
+    required this.proofPath,
+    required this.uploadService,
+  });
+
+  final String proofPath;
+  final UploadService uploadService;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String>(
+      future: uploadService.createCompletionProofSignedUrl(proofPath),
+      builder: (context, snapshot) {
+        final url = snapshot.data;
+        return OutlinedButton.icon(
+          onPressed: url == null ? null : () => _launchProofUrl(context, url),
+          icon: const Icon(Icons.attach_file_outlined),
+          label: Text(url == null ? '正在准备证明文件' : '打开证明文件'),
+        );
+      },
+    );
+  }
+}
+
+Future<void> _launchProofUrl(BuildContext context, String url) async {
+  final uri = Uri.tryParse(url);
+  if (uri == null ||
+      !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('暂时无法打开证明文件')),
     );
   }
 }
@@ -725,28 +1010,90 @@ class _OwnerActions extends StatelessWidget {
           )
         else
           ...offers.map(
-            (offer) => Card(
-              child: ListTile(
-                leading:
-                    const CircleAvatar(child: Icon(Icons.handyman_outlined)),
-                title: Text(offer.helperName ?? '帮手'),
-                subtitle: Text(offer.message ?? '暂无留言'),
-                trailing: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(formatMoney(offer.amount)),
-                    Text(offer.status.label),
-                  ],
-                ),
-                onTap: offer.status == OfferStatus.pending &&
-                        task.assignedHelperId == null
-                    ? () => onAccept(offer)
-                    : null,
-              ),
+            (offer) => _OfferDecisionCard(
+              offer: offer,
+              canAccept: offer.status == OfferStatus.pending &&
+                  task.assignedHelperId == null,
+              onAccept: () => onAccept(offer),
             ),
           ),
       ],
+    );
+  }
+}
+
+class _OfferDecisionCard extends StatelessWidget {
+  const _OfferDecisionCard({
+    required this.offer,
+    required this.canAccept,
+    required this.onAccept,
+  });
+
+  final TaskOffer offer;
+  final bool canAccept;
+  final VoidCallback onAccept;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const CircleAvatar(child: Icon(Icons.handyman_outlined)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          offer.helperName ?? '帮手',
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                        ),
+                      ),
+                      Chip(
+                        label: Text(offer.status.label),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    formatMoney(offer.amount),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                  if (offer.estimatedMinutes != null) ...[
+                    const SizedBox(height: 4),
+                    Text('预计用时：${offer.estimatedMinutes} 分钟'),
+                  ],
+                  const SizedBox(height: 8),
+                  Text(offer.message ?? '暂无留言'),
+                  if (canAccept) ...[
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton.icon(
+                        onPressed: onAccept,
+                        icon: const Icon(Icons.check_circle_outline),
+                        label: const Text('选择这位帮手'),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

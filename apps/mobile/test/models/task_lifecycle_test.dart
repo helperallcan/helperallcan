@@ -36,10 +36,26 @@ void main() {
   test('TaskStatus exposes lifecycle action rules', () {
     expect(TaskStatus.open.canReceiveOffers, isTrue);
     expect(TaskStatus.offered.canReceiveOffers, isTrue);
+    expect(TaskStatus.open.isWaitingForHelper, isTrue);
+    expect(TaskStatus.offered.isWaitingForHelper, isTrue);
     expect(TaskStatus.assigned.canOwnerReopen, isTrue);
     expect(TaskStatus.inProgress.canConfirmCompletion, isTrue);
+    expect(TaskStatus.assigned.isActiveWork, isTrue);
+    expect(TaskStatus.inProgress.isActiveWork, isTrue);
     expect(TaskStatus.completed.canOwnerCancel, isFalse);
     expect(TaskStatus.cancelled.isClosed, isTrue);
+  });
+
+  test('TaskStatus exposes lifecycle steps and hints', () {
+    expect(TaskStatus.draft.lifecycleStep, 0);
+    expect(TaskStatus.open.lifecycleStep, 1);
+    expect(TaskStatus.offered.lifecycleStep, 2);
+    expect(TaskStatus.assigned.lifecycleStep, 3);
+    expect(TaskStatus.inProgress.lifecycleStep, 4);
+    expect(TaskStatus.completed.lifecycleStep, 5);
+    expect(TaskStatus.cancelled.lifecycleStep, -1);
+    expect(TaskStatus.open.lifecycleHint, contains('等待帮手报价'));
+    expect(TaskStatus.completed.lifecycleHint, contains('双方可以互相评价'));
   });
 
   test('TaskOffer.fromMap maps helper profile display name', () {

@@ -5,9 +5,12 @@ import {
   banUserSchema,
   canApplyReportEnforcement,
   categorySchema,
+  getReportStatusLabel,
   getReportTargetLabel,
   getStatusLabel,
+  isOpenReviewStatus,
   reportEnforcementSchema,
+  reportSchema,
   taskStatusSchema
 } from './moderation.ts';
 
@@ -49,6 +52,16 @@ test('reportEnforcementSchema normalizes optional text', () => {
   assert.equal(input.resolution, '已提醒用户');
 });
 
+test('reportSchema accepts open reports for the admin review queue', () => {
+  const input = reportSchema.parse({
+    reportId: '00000000-0000-0000-0000-000000000001',
+    status: 'open',
+    resolution: ''
+  });
+  assert.equal(input.status, 'open');
+  assert.equal(input.resolution, undefined);
+});
+
 test('categorySchema normalizes slug and optional ids', () => {
   const input = categorySchema.parse({
     categoryId: '',
@@ -70,6 +83,15 @@ test('categorySchema normalizes slug and optional ids', () => {
 test('labels use Chinese copy with safe fallbacks', () => {
   assert.equal(getStatusLabel('reviewing'), '处理中');
   assert.equal(getStatusLabel('custom'), 'custom');
+  assert.equal(getReportStatusLabel('open'), '待处理');
+  assert.equal(getReportStatusLabel('rejected'), '已关闭');
   assert.equal(getReportTargetLabel('task'), '任务');
   assert.equal(getReportTargetLabel('unknown'), 'unknown');
+});
+
+test('review queue treats open, reviewing, and pending items as active work', () => {
+  assert.equal(isOpenReviewStatus('open'), true);
+  assert.equal(isOpenReviewStatus('reviewing'), true);
+  assert.equal(isOpenReviewStatus('pending'), true);
+  assert.equal(isOpenReviewStatus('resolved'), false);
 });

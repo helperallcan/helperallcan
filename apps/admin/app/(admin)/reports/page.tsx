@@ -1,22 +1,61 @@
+import { FilterTabs } from '@/components/filter-tabs';
+import { StatCard } from '@/components/stat-card';
 import { StatusBadge } from '@/components/status-badge';
 import {
   canApplyReportEnforcement,
   getReportEnforcementLabel,
+  getReportStatusLabel,
   getReportTargetLabel,
-  getStatusLabel,
+  reportFilterStatusValues,
   reportEnforcementValues,
-  reportStatusValues
+  reportStatusValues,
+  type ReportFilterStatusValue,
+  type ReportStatusValue
 } from '@/lib/moderation';
 import { adminSupabase } from '@/lib/supabase/admin';
 
 import { applyReportEnforcementAction, updateReportAction } from '../actions';
 
-export default async function ReportsPage() {
-  const { data: reports } = await adminSupabase
+type ReportsPageProps = {
+  searchParams?: Promise<{ status?: string | string[] }>;
+};
+
+function resolveReportStatus(status?: string | string[]): ReportFilterStatusValue {
+  const value = Array.isArray(status) ? status[0] : status;
+  return reportFilterStatusValues.includes(value as ReportFilterStatusValue)
+    ? (value as ReportFilterStatusValue)
+    : 'open';
+}
+
+function countReports(status: ReportStatusValue) {
+  return adminSupabase.from('reports').select('*', { count: 'exact', head: true }).eq('status', status);
+}
+
+export default async function ReportsPage({ searchParams }: ReportsPageProps) {
+  const params = await searchParams;
+  const activeStatus = resolveReportStatus(params?.status);
+  const reportsQuery = adminSupabase
     .from('reports')
     .select('id, target_type, target_id, reason, details, status, resolution, created_at, reporter:reporter_id(display_name)')
-    .order('created_at', { ascending: false })
-    .limit(120);
+    .order('created_at', { ascending: false });
+  const scopedReportsQuery =
+    activeStatus === 'all' ? reportsQuery.limit(120) : reportsQuery.eq('status', activeStatus).limit(120);
+  const [openResult, reviewingResult, resolvedResult, rejectedResult, reportsResult] = await Promise.all([
+    countReports('open'),
+    countReports('reviewing'),
+    countReports('resolved'),
+    countReports('rejected'),
+    scopedReportsQuery
+  ]);
+
+  const counts = {
+    open: openResult.count ?? 0,
+    reviewing: reviewingResult.count ?? 0,
+    resolved: resolvedResult.count ?? 0,
+    rejected: rejectedResult.count ?? 0
+  };
+  const totalReports = counts.open + counts.reviewing + counts.resolved + counts.rejected;
+  const reports = reportsResult.data ?? [];
 
   return (
     <>
@@ -26,6 +65,43 @@ export default async function ReportsPage() {
           <p>处理用户或任务举报，可直接隐藏任务、拒绝任务或封禁用户。</p>
         </div>
       </div>
+
+      <section className="stats">
+        <StatCard label="待处理" value={counts.open} hint="新举报" />
+        <StatCard label="处理中" value={counts.reviewing} hint="已进入审核" />
+        <StatCard label="已解决" value={counts.resolved} />
+        <StatCard label="已关闭" value={counts.rejected} />
+      </section>
+
+      <FilterTabs
+        tabs={[
+          { label: '待处理', href: '/reports', count: counts.open, active: activeStatus === 'open' },
+          {
+            label: '处理中',
+            href: '/reports?status=reviewing',
+            count: counts.reviewing,
+            active: activeStatus === 'reviewing'
+          },
+          {
+            label: '已解决',
+            href: '/reports?status=resolved',
+            count: counts.resolved,
+            active: activeStatus === 'resolved'
+          },
+          {
+            label: '已关闭',
+            href: '/reports?status=rejected',
+            count: counts.rejected,
+            active: activeStatus === 'rejected'
+          },
+          {
+            label: '全部',
+            href: '/reports?status=all',
+            count: totalReports,
+            active: activeStatus === 'all'
+          }
+        ]}
+      />
 
       <section className="panel">
         <table>
@@ -38,7 +114,7 @@ export default async function ReportsPage() {
             </tr>
           </thead>
           <tbody>
-            {(reports ?? []).map((report) => {
+            {reports.map((report) => {
               const reporter = Array.isArray(report.reporter) ? report.reporter[0] : report.reporter;
               return (
                 <tr key={report.id}>
@@ -55,7 +131,7 @@ export default async function ReportsPage() {
                     <div className="muted">{report.target_id}</div>
                   </td>
                   <td>
-                    <StatusBadge value={report.status} />
+                    <StatusBadge value={report.status} label={getReportStatusLabel(report.status)} />
                     {report.resolution ? <div className="muted">{report.resolution}</div> : null}
                   </td>
                   <td>
@@ -64,7 +140,7 @@ export default async function ReportsPage() {
                       <select name="status" defaultValue={report.status}>
                         {reportStatusValues.map((status) => (
                           <option key={status} value={status}>
-                            {getStatusLabel(status)}
+                            {getReportStatusLabel(status)}
                           </option>
                         ))}
                       </select>
@@ -96,6 +172,13 @@ export default async function ReportsPage() {
                 </tr>
               );
             })}
+            {reports.length === 0 ? (
+              <tr>
+                <td className="empty-row" colSpan={4}>
+                  当前没有{activeStatus === 'all' ? '' : getReportStatusLabel(activeStatus)}举报。
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </section>

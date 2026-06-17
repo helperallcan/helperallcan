@@ -1,13 +1,37 @@
 import { z } from 'zod';
 
 export const taskStatusValues = ['open', 'hidden', 'rejected', 'cancelled', 'completed'] as const;
-export const reportStatusValues = ['reviewing', 'resolved', 'rejected'] as const;
+export const taskFilterStatusValues = [
+  'all',
+  'open',
+  'offered',
+  'assigned',
+  'in_progress',
+  'completed',
+  'hidden',
+  'rejected',
+  'cancelled'
+] as const;
+export const reportStatusValues = ['open', 'reviewing', 'resolved', 'rejected'] as const;
+export const reportFilterStatusValues = ['all', ...reportStatusValues] as const;
 export const verificationStatusValues = ['approved', 'rejected'] as const;
+export const verificationFilterStatusValues = [
+  'all',
+  'pending',
+  'none',
+  'rejected',
+  'approved'
+] as const;
+export const userFilterStatusValues = ['all', 'active', 'blocked', 'admin'] as const;
 export const reportEnforcementValues = ['hide_task', 'reject_task', 'ban_user', 'resolve_only'] as const;
 
 export type TaskStatusValue = (typeof taskStatusValues)[number];
+export type TaskFilterStatusValue = (typeof taskFilterStatusValues)[number];
 export type ReportStatusValue = (typeof reportStatusValues)[number];
+export type ReportFilterStatusValue = (typeof reportFilterStatusValues)[number];
 export type VerificationStatusValue = (typeof verificationStatusValues)[number];
+export type VerificationFilterStatusValue = (typeof verificationFilterStatusValues)[number];
+export type UserFilterStatusValue = (typeof userFilterStatusValues)[number];
 export type ReportEnforcementValue = (typeof reportEnforcementValues)[number];
 
 const uuid = z.string().uuid();
@@ -109,6 +133,13 @@ const reportTargetLabels: Record<string, string> = {
   review: '评价'
 };
 
+const reportStatusLabels: Record<ReportStatusValue, string> = {
+  open: '待处理',
+  reviewing: '处理中',
+  resolved: '已解决',
+  rejected: '已关闭'
+};
+
 const enforcementLabels: Record<ReportEnforcementValue, string> = {
   hide_task: '隐藏任务并解决',
   reject_task: '拒绝任务并解决',
@@ -124,6 +155,10 @@ export function getReportTargetLabel(value?: string | null) {
   return reportTargetLabels[value ?? ''] ?? value ?? '-';
 }
 
+export function getReportStatusLabel(value?: string | null) {
+  return reportStatusLabels[value as ReportStatusValue] ?? getStatusLabel(value);
+}
+
 export function getReportEnforcementLabel(value: ReportEnforcementValue) {
   return enforcementLabels[value];
 }
@@ -133,4 +168,8 @@ export function canApplyReportEnforcement(targetType: string, enforcement: Repor
   if (enforcement === 'hide_task' || enforcement === 'reject_task') return targetType === 'task';
   if (enforcement === 'ban_user') return targetType === 'user';
   return false;
+}
+
+export function isOpenReviewStatus(status?: string | null) {
+  return status === 'open' || status === 'reviewing' || status === 'pending';
 }

@@ -193,6 +193,43 @@ textarea {
   padding: 16px;
 }
 
+.filter-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.filter-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #fff;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.filter-tab:hover,
+.filter-tab.active {
+  border-color: #9bb8d8;
+  background: #eef6ff;
+  color: var(--primary-dark);
+}
+
+.filter-tab strong {
+  min-width: 24px;
+  border-radius: 999px;
+  padding: 2px 7px;
+  background: rgba(23, 105, 170, 0.12);
+  color: var(--primary-dark);
+  text-align: center;
+  font-size: 12px;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -210,6 +247,12 @@ th {
   background: #f8fafc;
   color: var(--muted);
   font-weight: 700;
+}
+
+.empty-row {
+  padding: 22px 12px;
+  color: var(--muted);
+  text-align: center;
 }
 
 .actions {

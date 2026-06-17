@@ -14,6 +14,7 @@ import {
   reportSchema,
   taskStatusSchema,
   verificationSchema,
+  type ReportStatusValue,
   type ReportEnforcementValue,
   type TaskStatusValue
 } from '@/lib/moderation';
@@ -242,7 +243,7 @@ async function setUserBlocked(input: {
 async function updateReportStatus(input: {
   admin: AdminProfile;
   reportId: string;
-  status: 'reviewing' | 'resolved' | 'rejected';
+  status: ReportStatusValue;
   resolution?: string;
   logAction?: string;
 }) {

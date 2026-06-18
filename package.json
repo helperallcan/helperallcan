@@ -11,6 +11,8 @@
     "check:supabase": "supabase start && supabase db reset --local && supabase test db && supabase db lint --local && supabase stop --no-backup",
     "admin:dev": "npm --prefix apps/admin run dev",
     "admin:build": "npm --prefix apps/admin run build",
-    "admin:lint": "npm --prefix apps/admin run lint"
+    "admin:lint": "npm --prefix apps/admin run lint",
+    "admin:check": "npm --prefix apps/admin run admin:check",
+    "admin:promote": "npm --prefix apps/admin run admin:promote"
   }
 }

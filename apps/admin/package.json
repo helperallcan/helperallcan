@@ -7,7 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "lint": "eslint .",
-    "test": "node --experimental-strip-types --test lib/auth-errors.test.ts lib/moderation.test.ts",
+    "test": "node --experimental-strip-types --test lib/auth-errors.test.ts lib/moderation.test.ts tool/admin-setup.test.mjs",
+    "admin:check": "node tool/admin-setup.mjs check",
+    "admin:promote": "node tool/admin-setup.mjs promote",
     "check": "npm run lint && npm run test && npm run build && npm audit --omit=dev"
   },
   "dependencies": {

@@ -35,9 +35,15 @@ flutter run `
 Admin 后台：
 
 ```powershell
-cd apps/admin
 npm install
-npm run dev
+npm run admin:dev
+```
+
+后台登录检查和管理员授权：
+
+```powershell
+npm run admin:check
+npm run admin:promote -- admin@example.com
 ```
 
 ## Supabase 初始化
